@@ -3,6 +3,7 @@ const dialog = () => document.getElementById('dialog');
 
 export function showDialog({ html, actions = [], dismissible = false, onDismiss } = {}) {
   const box = dialog();
+  box.classList.remove('range-dialog');
   box.innerHTML = html;
 
   const row = document.createElement('div');
@@ -28,8 +29,10 @@ export function showDialog({ html, actions = [], dismissible = false, onDismiss 
 }
 
 export function closeDialog() {
+  const box = dialog();
+  box.classList.remove('range-dialog');
+  box.innerHTML = '';
   overlay().classList.add('hidden');
-  dialog().innerHTML = '';
 }
 
 let toastTimer = 0;

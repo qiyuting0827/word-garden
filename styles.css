@@ -1031,8 +1031,9 @@ img { -webkit-user-drag: none; user-select: none; }
 /* ================= 词表工具 / 导入 ================= */
 .menu-tools {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 8px 10px;
   margin: -6px 0 14px;
 }
 
@@ -1053,6 +1054,7 @@ img { -webkit-user-drag: none; user-select: none; }
 
 .tool-btn:hover { transform: translateY(-1px); background: #fff6d8; }
 .tool-btn small { font-size: 11px; font-weight: 600; color: #9a7a48; }
+.tool-btn b { color: #4c7a1e; font-weight: 800; }
 .tool-btn.has-due {
   background: linear-gradient(180deg, #fff5c9, #ffe08a);
   border-color: #e0a83a;
@@ -1655,4 +1657,123 @@ body.review-open .tk-actions [data-tk="hide"] { display: none; }
 @media (max-height: 480px) {
   .review-close { width: 92px; height: 92px; font-size: 36px; }
   body.review-open #dialog { transform: translateY(-150px); }
+}
+
+/* ================= 自选教材范围 ================= */
+.range-box {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 8px 0 18px;
+  text-align: left;
+}
+
+.range-row,
+.range-pair label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #6b4a1c;
+}
+
+.range-row > span,
+.range-pair label > span {
+  width: 44px;
+  text-align: right;
+  flex: none;
+}
+
+.range-row select,
+.range-pair select {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 2px solid #c9a063;
+  background: #fffdf5;
+  font-family: inherit;
+  font-size: 16px;
+  color: #5a3a12;
+}
+
+.range-pair {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.range-pair label { flex: 1; min-width: 0; }
+
+.range-pair .range-side {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.range-pair .range-side > span {
+  width: auto;
+  text-align: left;
+  font-size: 14px;
+  color: #8a6a38;
+}
+
+.range-pair .range-side select {
+  width: 100%;
+  flex: none;
+  padding: 9px 12px;
+  font-size: 15px;
+}
+
+.range-pair .range-side .range-word {
+  padding: 8px 10px;
+  font-size: 14px;
+  color: #7a5a2c;
+}
+
+.range-arrow {
+  align-self: center;
+  padding-bottom: 0;
+  font-size: 24px;
+  color: #9a6a34;
+}
+
+.range-info {
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 2px dashed #d2b06a;
+  background: #fff6d8;
+  font-size: 15px;
+  line-height: 1.7;
+  color: #6b4a1c;
+}
+
+.range-info b { color: #3f7a1c; font-size: 20px; }
+.range-info span { color: #8a6a38; }
+
+@media (pointer: coarse), (max-width: 1100px) {
+  #dialog.range-dialog {
+    width: 1080px;
+    max-height: 700px;
+    padding: 22px 30px 20px;
+  }
+  #dialog.range-dialog h2 { font-size: 44px; letter-spacing: 2px; }
+  #dialog.range-dialog .dialog-sub { font-size: 22px; margin-bottom: 14px; }
+  #dialog.range-dialog .range-row,
+  #dialog.range-dialog .range-pair label { font-size: 24px; }
+  #dialog.range-dialog .range-row > span {
+    width: auto;
+    min-width: 64px;
+    white-space: nowrap;
+  }
+  #dialog.range-dialog .range-pair .range-side > span { font-size: 22px; }
+  #dialog.range-dialog select { font-size: 26px; padding: 9px 12px; }
+  #dialog.range-dialog .range-pair .range-side .range-word { font-size: 24px; }
+  #dialog.range-dialog .range-info { font-size: 22px; line-height: 1.55; padding: 10px 14px; }
+  #dialog.range-dialog .range-info b { font-size: 26px; }
+  #dialog.range-dialog .big-btn { font-size: 24px; padding: 12px 30px; }
 }

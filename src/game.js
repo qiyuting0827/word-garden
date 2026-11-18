@@ -1,6 +1,7 @@
 import {
   GRID, SPAWN_X, HOUSE_X, MOWER_X, PLANTS, ZOMBIES,
-  cellCenter, rowY, buildSpawns, totalZombies, DIFF_HP_SCALE, SPELL, WAVES, ART,
+  cellCenter, rowY, buildSpawns, DIFF_HP_SCALE, SPELL, WAVES, ART,
+  ZOMBIE_SPEED_KEY, DEFAULT_ZOMBIE_SPEED, zombieSpeed,
 } from './config.js';
 import { classic } from './skin.js';
 import { audio } from './audio.js';
@@ -73,8 +74,9 @@ export class Game {
   start({ unit, diff }) {
     this.unit = unit;
     this.diff = diff;
-    this.spawns = buildSpawns(diff);
-    this.total = totalZombies(diff);
+    const speed = zombieSpeed(localStorage.getItem(ZOMBIE_SPEED_KEY) || DEFAULT_ZOMBIE_SPEED);
+    this.spawns = buildSpawns(diff, speed.scale);
+    this.total = this.spawns.length;
     this.hpScale = DIFF_HP_SCALE[diff] || 1;
 
     this.sun = 75;

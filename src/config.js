@@ -124,6 +124,20 @@ export const WAVES = {
 
 export const DIFF_HP_SCALE = { 1: 1, 2: 1.12, 3: 1.25 };
 
+export const ZOMBIE_SPEED_KEY = 'word-garden-zombie-speed';
+export const DEFAULT_ZOMBIE_SPEED = 'normal';
+export const ZOMBIE_SPEEDS = [
+  { id: 'slow', name: '慢', icon: '🐢', scale: 1.35 },
+  { id: 'normal', name: '正常', icon: '🚶', scale: 1 },
+  { id: 'fast', name: '快', icon: '🐇', scale: 0.78 },
+  { id: 'rush', name: '极速', icon: '🔥', scale: 0.6 },
+];
+
+export function zombieSpeed(id) {
+  return ZOMBIE_SPEEDS.find((s) => s.id === id)
+    || ZOMBIE_SPEEDS.find((s) => s.id === DEFAULT_ZOMBIE_SPEED);
+}
+
 export const SPELL = {
   sunPerWord: 10,
   comboBonusAt: 3,
@@ -134,13 +148,19 @@ export const SPELL = {
   wrongLock: 1400,
 };
 
-export function buildSpawns(diff) {
+export function buildSpawns(diff, speed = 1) {
+  const scale = typeof speed === 'number' ? speed : zombieSpeed(speed).scale;
   const waves = WAVES[diff] || WAVES[1];
   const spawns = [];
   waves.forEach((wave, wi) => {
     wave.list.forEach(([type, count, every]) => {
       for (let i = 0; i < count; i++) {
-        spawns.push({ at: wave.at + i * every, type, wave: wi, flag: wave.flag && i === count - 1 });
+        spawns.push({
+          at: Math.round((wave.at + i * every) * scale),
+          type,
+          wave: wi,
+          flag: wave.flag && i === count - 1,
+        });
       }
     });
   });
@@ -148,8 +168,8 @@ export function buildSpawns(diff) {
   return spawns;
 }
 
-export function totalZombies(diff) {
-  return buildSpawns(diff).length;
+export function totalZombies(diff, speed = 1) {
+  return buildSpawns(diff, speed).length;
 }
 
 export function starFor(accuracy) {

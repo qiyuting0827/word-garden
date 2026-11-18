@@ -1,6 +1,8 @@
 import { UNITS, DIFFICULTIES } from './words.js';
 import { TEXTBOOK_BOOKS, TEXTBOOK_UNITS } from './textbook.js';
-import { SAVE_KEY, ART } from './config.js';
+import {
+  SAVE_KEY, ART, ZOMBIE_SPEEDS, DEFAULT_ZOMBIE_SPEED, ZOMBIE_SPEED_KEY,
+} from './config.js';
 import { Game } from './game.js';
 import { audio } from './audio.js';
 import { applySkin } from './skin.js';
@@ -8,13 +10,14 @@ import { showDialog, closeDialog, starString, escapeHtml, toast } from './ui.js'
 import { allUnits, importUnit, deleteUnit, SAMPLE_CSV } from './wordstore.js';
 import { dueCount, dueWords } from './srs.js';
 import { ReviewSession } from './review.js';
+import { loadRanges, addRange, deleteRange, findRange } from './ranges.js';
 
 const $ = (id) => document.getElementById(id);
 const isTouch = window.matchMedia('(pointer: coarse)').matches
   || navigator.maxTouchPoints > 0
   || new URLSearchParams(location.search).has('touch');
 if (isTouch) document.body.classList.add('touch');
-const BOOK_ORDER = ['主题', ...TEXTBOOK_BOOKS.map(b => b.name), '自定义'];
+const BOOK_ORDER = ['主题', ...TEXTBOOK_BOOKS.map(b => b.name), '自选', '自定义'];
 let activeBook = localStorage.getItem('word-garden-book') || '六上';
 let units = [];
 
@@ -22,7 +25,7 @@ function loadUnits() {
   const base = allUnits(UNITS);
   const theme = base.filter(u => !u.custom).map(u => ({ ...u, book: u.book || '主题' }));
   const custom = base.filter(u => u.custom).map(u => ({ ...u, book: '自定义' }));
-  return [...theme, ...TEXTBOOK_UNITS, ...custom];
+  return [...theme, ...TEXTBOOK_UNITS, ...loadRanges(), ...custom];
 }
 
 function loadProgress() {
@@ -114,6 +117,29 @@ function refreshReviewButton() {
   btn.classList.toggle('has-due', n > 0);
 }
 
+function currentSpeed() {
+  const id = localStorage.getItem(ZOMBIE_SPEED_KEY) || DEFAULT_ZOMBIE_SPEED;
+  return ZOMBIE_SPEEDS.find(s => s.id === id)
+    || ZOMBIE_SPEEDS.find(s => s.id === DEFAULT_ZOMBIE_SPEED);
+}
+
+function refreshSpeedButton() {
+  const speed = currentSpeed();
+  const icon = $('speed-icon');
+  const label = $('speed-label');
+  if (icon) icon.textContent = speed.icon;
+  if (label) label.textContent = speed.name;
+}
+
+function cycleSpeed() {
+  const idx = ZOMBIE_SPEEDS.findIndex(s => s.id === currentSpeed().id);
+  const next = ZOMBIE_SPEEDS[(idx + 1) % ZOMBIE_SPEEDS.length];
+  localStorage.setItem(ZOMBIE_SPEED_KEY, next.id);
+  refreshSpeedButton();
+  audio.play('click', { volume: 0.35 });
+  toast(`僵尸出现速度：${next.name}`, 1200);
+}
+
 function buildBookTabs() {
   const tabs = $('book-tabs');
   if (!tabs) return;
@@ -149,6 +175,7 @@ function buildMenu() {
     btn.classList.toggle('active', btn.dataset.mode === mode);
   });
   refreshReviewButton();
+  refreshSpeedButton();
 
   const shown = units.filter(u => u.book === activeBook);
   shown.forEach((unit) => {
@@ -175,7 +202,7 @@ function buildMenu() {
         </div>
       </div>
       <div class="diffs">${diffs}</div>
-      ${unit.custom ? `<button class="unit-del" data-del="${unit.id}" title="删除这个词表">🗑</button>` : ''}
+      ${(unit.custom || unit.range) ? `<button class="unit-del" data-del="${unit.id}" title="删除这个关卡">🗑</button>` : ''}
     `;
     list.appendChild(card);
   });
@@ -199,7 +226,7 @@ function confirmDelete(unitId) {
   const unit = units.find(u => u.id === unitId);
   if (!unit) return;
   showDialog({
-    html: `<h2>删除词表？</h2>
+    html: `<h2>${unit.range ? '删除关卡？' : '删除词表？'}</h2>
       <p class="dialog-sub">「${escapeHtml(unit.name)}」的 ${unit.words.length} 个单词将被删除，复习记录会保留。</p>`,
     actions: [
       { label: '取消', cls: 'gray', onClick: closeDialog },
@@ -207,7 +234,8 @@ function confirmDelete(unitId) {
         label: '删除',
         cls: 'red',
         onClick: () => {
-          deleteUnit(unitId);
+          if (unit.range) deleteRange(unitId);
+          else deleteUnit(unitId);
           const progress = loadProgress();
           Object.keys(progress).forEach((key) => {
             if (key.startsWith(`${unitId}-`)) delete progress[key];
@@ -215,7 +243,7 @@ function confirmDelete(unitId) {
           saveProgress(progress);
           closeDialog();
           buildMenu();
-          toast('词表已删除');
+          toast(unit.range ? '自选关卡已删除' : '词表已删除');
         },
       },
     ],
@@ -437,6 +465,224 @@ function handleFinish(result) {
   }
 }
 
+function openRange() {
+  const books = TEXTBOOK_BOOKS;
+  const startBook = books.some(b => b.name === activeBook) ? activeBook : books[0].name;
+  showDialog({
+    html: `
+      <h2>🎯 自选教材范围</h2>
+      <p class="dialog-sub">起止单元可以不同，中间单元自动包含；每端都能选到具体单词</p>
+      <div class="range-box">
+        <label class="range-row"><span>分册</span><select id="range-book"></select></label>
+        <div class="range-pair">
+          <label class="range-side">
+            <span>起点</span>
+            <select id="range-from"></select>
+            <select id="range-from-word" class="range-word"></select>
+          </label>
+          <div class="range-arrow">→</div>
+          <label class="range-side">
+            <span>终点</span>
+            <select id="range-to"></select>
+            <select id="range-to-word" class="range-word"></select>
+          </label>
+        </div>
+        <div class="range-info" id="range-info"></div>
+      </div>`,
+    actions: [
+      { label: '取消', cls: 'gray', onClick: closeDialog },
+      { label: '生成关卡', cls: 'gold', onClick: createRange },
+    ],
+  });
+  $('dialog').classList.add('range-dialog');
+
+  const bookSel = $('range-book');
+  const fromSel = $('range-from');
+  const toSel = $('range-to');
+  const fromWordSel = $('range-from-word');
+  const toWordSel = $('range-to-word');
+  const info = $('range-info');
+  const unitsOf = (book) => TEXTBOOK_UNITS.filter(u => u.book === book);
+  let currentList = [];
+
+  const wordOptions = (unit) => unit.words
+    .map((w, i) => `<option value="${i}">${i + 1}. ${escapeHtml(w.en)}</option>`)
+    .join('');
+
+  function refillWords(which, index = 0) {
+    const unitSel = which === 'from' ? fromSel : toSel;
+    const wordSel = which === 'from' ? fromWordSel : toWordSel;
+    const unit = currentList[Number(unitSel.value)];
+    wordSel.innerHTML = unit ? wordOptions(unit) : '';
+    if (unit) wordSel.value = String(Math.max(0, Math.min(index, unit.words.length - 1)));
+  }
+
+  function selectedInfo() {
+    let a = Number(fromSel.value);
+    let b = Number(toSel.value);
+    if (!Number.isFinite(a)) a = 0;
+    if (!Number.isFinite(b)) b = a;
+    if (a > b) [a, b] = [b, a];
+    let fw = Number(fromWordSel.value) || 0;
+    let tw = Number(toWordSel.value) || 0;
+    if (a === b && fw > tw) [fw, tw] = [tw, fw];
+
+    const seen = new Set();
+    const words = [];
+    for (let k = a; k <= b; k += 1) {
+      const unit = currentList[k];
+      if (!unit) continue;
+      const start = k === a ? fw : 0;
+      const end = k === b ? tw : unit.words.length - 1;
+      for (let i = start; i <= end; i += 1) {
+        const word = unit.words[i];
+        if (!word) continue;
+        const key = word.en.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        words.push({ ...word });
+      }
+    }
+    return {
+      a, b, fw, tw,
+      fromUnit: currentList[a],
+      toUnit: currentList[b],
+      units: currentList.slice(a, b + 1),
+      words,
+    };
+  }
+
+  function updateInfo() {
+    const picked = selectedInfo();
+    if (!picked.fromUnit || !picked.toUnit) {
+      info.textContent = '这个分册还没有单元';
+      return;
+    }
+    if (!picked.words.length) {
+      info.textContent = '这个范围没有可用单词，请调整起止位置';
+      return;
+    }
+    info.innerHTML = `已选 <b>${picked.words.length}</b> 个单词 · <b>${picked.units.length}</b> 个单元<br>`
+      + `<span>${escapeHtml(picked.fromUnit.name)} 第 ${picked.fw + 1} 词 → `
+      + `${escapeHtml(picked.toUnit.name)} 第 ${picked.tw + 1} 词</span><br>`
+      + `<span>${escapeHtml(picked.words[0].en)} → ${escapeHtml(picked.words[picked.words.length - 1].en)}</span>`;
+  }
+
+  function fill(book) {
+    currentList = unitsOf(book);
+    const options = currentList
+      .map((u, i) => `<option value="${i}">${escapeHtml(u.name)} · ${u.words.length} 词</option>`)
+      .join('');
+    fromSel.innerHTML = options;
+    toSel.innerHTML = options;
+    fromSel.value = '0';
+    toSel.value = '0';
+    refillWords('from', 0);
+    const first = currentList[0];
+    refillWords('to', first ? first.words.length - 1 : 0);
+    updateInfo();
+  }
+
+  function createRange() {
+    const picked = selectedInfo();
+    if (!picked.words.length) {
+      toast('这个范围没有可用单词');
+      return;
+    }
+    const book = bookSel.value;
+    const from = picked.fromUnit.id;
+    const to = picked.toUnit.id;
+    const fromWord = picked.fw;
+    const toWord = picked.tw;
+    const existing = findRange({ book, from, fromWord, to, toWord });
+    closeDialog();
+    activeBook = '自选';
+    localStorage.setItem('word-garden-book', activeBook);
+    if (existing) {
+      buildMenu();
+      toast('这个范围已经生成过，已切到「自选」', 1800);
+      return;
+    }
+
+    let name;
+    if (picked.a === picked.b) {
+      const full = fromWord === 0 && toWord === picked.fromUnit.words.length - 1;
+      name = full
+        ? `${book} · ${picked.fromUnit.name}`
+        : `${book} · ${picked.fromUnit.name} 第 ${fromWord + 1}–${toWord + 1} 词`;
+    } else {
+      name = `${book} · ${picked.fromUnit.name} 第 ${fromWord + 1} 词–`
+        + `${picked.toUnit.name} 第 ${toWord + 1} 词`;
+    }
+
+    addRange({
+      book,
+      from,
+      fromWord,
+      to,
+      toWord,
+      name,
+      desc: `${book} · ${picked.words.length} 个单词 · 自选范围`,
+      words: picked.words,
+    });
+    buildMenu();
+    audio.play('win', { volume: 0.35 });
+    toast(`已生成「${name}」${picked.words.length} 词`, 2400);
+  }
+
+  bookSel.innerHTML = books
+    .map(b => `<option value="${escapeHtml(b.name)}">${escapeHtml(b.name)} · ${escapeHtml(b.full)}</option>`)
+    .join('');
+  bookSel.value = startBook;
+  bookSel.addEventListener('change', () => fill(bookSel.value));
+
+  fromSel.addEventListener('change', () => {
+    const a = Number(fromSel.value);
+    const b = Number(toSel.value);
+    if (a > b) {
+      toSel.value = String(a);
+      refillWords('to', currentList[a] ? currentList[a].words.length - 1 : 0);
+    }
+    refillWords('from', 0);
+    if (a === Number(toSel.value) && Number(fromWordSel.value) > Number(toWordSel.value)) {
+      toWordSel.value = fromWordSel.value;
+    }
+    updateInfo();
+  });
+
+  toSel.addEventListener('change', () => {
+    const a = Number(fromSel.value);
+    const b = Number(toSel.value);
+    if (b < a) {
+      fromSel.value = String(b);
+      refillWords('from', 0);
+    }
+    refillWords('to', currentList[b] ? currentList[b].words.length - 1 : 0);
+    if (Number(fromSel.value) === b && Number(toWordSel.value) < Number(fromWordSel.value)) {
+      fromWordSel.value = toWordSel.value;
+    }
+    updateInfo();
+  });
+
+  fromWordSel.addEventListener('change', () => {
+    if (Number(fromSel.value) === Number(toSel.value)
+      && Number(fromWordSel.value) > Number(toWordSel.value)) {
+      toWordSel.value = fromWordSel.value;
+    }
+    updateInfo();
+  });
+
+  toWordSel.addEventListener('change', () => {
+    if (Number(fromSel.value) === Number(toSel.value)
+      && Number(toWordSel.value) < Number(fromWordSel.value)) {
+      fromWordSel.value = toWordSel.value;
+    }
+    updateInfo();
+  });
+
+  fill(startBook);
+}
+
 function openImport() {
   showDialog({
     html: `
@@ -550,6 +796,13 @@ $('btn-import').addEventListener('click', () => {
   audio.play('click', { volume: 0.4 });
   openImport();
 });
+
+$('btn-range').addEventListener('click', () => {
+  audio.play('click', { volume: 0.4 });
+  openRange();
+});
+
+$('btn-speed').addEventListener('click', () => cycleSpeed());
 
 $('btn-review').addEventListener('click', () => {
   audio.play('click', { volume: 0.4 });
