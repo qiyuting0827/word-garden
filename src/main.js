@@ -10,6 +10,10 @@ import { dueCount, dueWords } from './srs.js';
 import { ReviewSession } from './review.js';
 
 const $ = (id) => document.getElementById(id);
+const isTouch = window.matchMedia('(pointer: coarse)').matches
+  || navigator.maxTouchPoints > 0
+  || new URLSearchParams(location.search).has('touch');
+if (isTouch) document.body.classList.add('touch');
 const BOOK_ORDER = ['主题', ...TEXTBOOK_BOOKS.map(b => b.name), '自定义'];
 let activeBook = localStorage.getItem('word-garden-book') || '六上';
 let units = [];
@@ -44,8 +48,59 @@ function unlocked(unitId, diff) {
 
 function fitStage() {
   const stage = $('stage');
-  const scale = Math.min(window.innerWidth / 1760, window.innerHeight / 760);
+  const vv = window.visualViewport;
+  const width = vv ? vv.width : window.innerWidth;
+  const height = vv ? vv.height : window.innerHeight;
+  const scale = Math.min(width / 1760, height / 760);
   stage.style.transform = `scale(${scale})`;
+}
+
+/* ================= 触屏屏幕键盘 ================= */
+let touchKeysWanted = false;
+
+function makeTkKey(label, key, cls = '') {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = `tk-key ${cls}`.trim();
+  btn.dataset.k = key;
+  btn.textContent = label;
+  return btn;
+}
+
+function buildTouchKeys() {
+  const box = $('tk-rows');
+  if (!box || box.childElementCount) return;
+  const rows = ['qwertyuiop', 'asdfghjkl'];
+  rows.forEach((letters) => {
+    const row = document.createElement('div');
+    row.className = 'tk-row';
+    for (const ch of letters) row.appendChild(makeTkKey(ch, ch));
+    box.appendChild(row);
+  });
+
+  const row3 = document.createElement('div');
+  row3.className = 'tk-row';
+  for (const ch of 'zxcvbnm') row3.appendChild(makeTkKey(ch, ch));
+  row3.appendChild(makeTkKey('⌫', 'Backspace', 'wide'));
+  box.appendChild(row3);
+
+  const row4 = document.createElement('div');
+  row4.className = 'tk-row';
+  for (const ch of '1234567890') row4.appendChild(makeTkKey(ch, ch, 'digit'));
+  box.appendChild(row4);
+}
+
+function syncTouchKeys(force = false) {
+  if (!isTouch) return;
+  const keys = $('touch-keys');
+  if (!keys) return;
+  if (force) touchKeysWanted = true;
+  const visible = game.running
+    && !game.paused
+    && !$('game').classList.contains('hidden')
+    && $('overlay').classList.contains('hidden')
+    && game.spelling.mode === 'type';
+  keys.classList.toggle('show', visible && touchKeysWanted);
 }
 
 function refreshReviewButton() {
@@ -176,6 +231,11 @@ function startGame(unitId, diff) {
   $('menu').classList.add('hidden');
   $('overlay').classList.add('hidden');
   game.start({ unit, diff });
+  if (isTouch) {
+    buildTouchKeys();
+    touchKeysWanted = game.spelling.mode === 'type';
+    syncTouchKeys();
+  }
 }
 
 function nextLevel(unitId, diff) {
@@ -189,6 +249,8 @@ function backToMenu() {
   closeDialog();
   $('game').classList.add('hidden');
   $('menu').classList.remove('hidden');
+  touchKeysWanted = false;
+  syncTouchKeys();
   buildMenu();
 }
 
@@ -450,6 +512,10 @@ document.querySelectorAll('#menu-mode button').forEach((btn) => {
     localStorage.setItem('word-garden-mode', btn.dataset.mode);
     game.spelling.setMode(btn.dataset.mode);
     document.querySelectorAll('#menu-mode button').forEach(b => b.classList.toggle('active', b === btn));
+    if (isTouch) {
+      touchKeysWanted = btn.dataset.mode === 'type';
+      syncTouchKeys();
+    }
     audio.play('click', { volume: 0.4 });
   });
 });
@@ -475,7 +541,66 @@ $('btn-review').addEventListener('click', () => {
   });
 });
 
+/* ================= 触屏键盘接线 ================= */
+if (isTouch) {
+  buildTouchKeys();
+  const input = $('hidden-input');
+  if (input) {
+    input.setAttribute('inputmode', 'none');
+    input.setAttribute('enterkeyhint', 'done');
+  }
+
+  $('btn-mode').addEventListener('click', () => {
+    touchKeysWanted = game.spelling.mode === 'type';
+    syncTouchKeys();
+  });
+
+  $('btn-pause').addEventListener('click', () => {
+    // Game 的监听器先执行；暂停会打开弹层，由 overlay observer 隐藏键盘。
+    syncTouchKeys();
+  });
+
+  $('type-box').addEventListener('pointerdown', () => {
+    touchKeysWanted = true;
+    syncTouchKeys();
+    setTimeout(() => game.spelling.focusInput(), 0);
+  });
+
+  $('touch-keys').addEventListener('pointerdown', (e) => {
+    const action = e.target.closest('[data-tk]');
+    if (action) {
+      e.preventDefault();
+      const kind = action.dataset.tk;
+      if (kind === 'hint') game.spelling.hint();
+      else if (kind === 'skip') game.spelling.skip();
+      else if (kind === 'hide') {
+        touchKeysWanted = false;
+        syncTouchKeys();
+      }
+      return;
+    }
+    const key = e.target.closest('[data-k]');
+    if (!key) return;
+    e.preventDefault();
+    const k = key.dataset.k;
+    if (k === 'Backspace') game.spelling.backspace();
+    else game.spelling.handleLetter(k);
+  });
+
+  const overlay = $('overlay');
+  const syncOverlay = () => {
+    const open = !overlay.classList.contains('hidden');
+    document.body.classList.toggle('overlay-open', open);
+    syncTouchKeys();
+    if (!open && touchKeysWanted) setTimeout(() => game.spelling.focusInput(), 0);
+  };
+  new MutationObserver(syncOverlay).observe(overlay, { attributes: true, attributeFilter: ['class'] });
+  syncOverlay();
+}
+
 window.addEventListener('resize', fitStage);
+if (window.visualViewport) window.visualViewport.addEventListener('resize', fitStage);
+window.addEventListener('orientationchange', () => setTimeout(fitStage, 120));
 window.addEventListener('pointerdown', () => audio.preload(), { once: true });
 window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && !$('overlay').classList.contains('hidden') && game.paused) game.resume();
