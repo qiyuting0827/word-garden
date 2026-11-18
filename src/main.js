@@ -95,11 +95,12 @@ function syncTouchKeys(force = false) {
   const keys = $('touch-keys');
   if (!keys) return;
   if (force) touchKeysWanted = true;
-  const visible = game.running
+  const review = activeReview();
+  const visible = !!review || (game.running
     && !game.paused
     && !$('game').classList.contains('hidden')
     && $('overlay').classList.contains('hidden')
-    && game.spelling.mode === 'type';
+    && game.spelling.mode === 'type');
   keys.classList.toggle('show', visible && touchKeysWanted);
 }
 
@@ -254,9 +255,31 @@ function backToMenu() {
   buildMenu();
 }
 
+function activeReview() {
+  const session = window.__review;
+  return session && !session.closed && !session.finished ? session : null;
+}
+
+function clearReview(session) {
+  if (session && window.__review !== session) return;
+  window.__review = null;
+  document.body.classList.remove('review-open');
+  syncTouchKeys();
+}
+
 function openReview(words, { title, onDone } = {}) {
-  const session = new ReviewSession(words, { title, onDone });
+  const session = new ReviewSession(words, {
+    title,
+    onDone: (result) => {
+      clearReview(session);
+      if (onDone) onDone(result);
+    },
+  });
+  window.__review = session;
+  document.body.classList.add('review-open');
+  touchKeysWanted = true;
   session.start();
+  syncTouchKeys();
   return session;
 }
 
@@ -325,7 +348,10 @@ function handleFinish(result) {
     closeDialog();
     openReview(wrongWords, {
       title: '本关错词复习',
-      onDone: () => showNextActions(result),
+      onDone: (res) => {
+        if (res.canceled) backToMenu();
+        else showNextActions(result);
+      },
     });
   };
 
@@ -534,9 +560,9 @@ $('btn-review').addEventListener('click', () => {
   }
   openReview(words, {
     title: '到期错词复习',
-    onDone: () => {
+    onDone: (res) => {
       buildMenu();
-      toast('复习完成，记忆已更新 ✨');
+      if (!res.canceled) toast('复习完成，记忆已更新 ✨');
     },
   });
 });
@@ -567,12 +593,13 @@ if (isTouch) {
   });
 
   $('touch-keys').addEventListener('pointerdown', (e) => {
+    const review = activeReview();
     const action = e.target.closest('[data-tk]');
     if (action) {
       e.preventDefault();
       const kind = action.dataset.tk;
-      if (kind === 'hint') game.spelling.hint();
-      else if (kind === 'skip') game.spelling.skip();
+      if (kind === 'hint') (review || game.spelling).hint();
+      else if (kind === 'skip') (review || game.spelling).skip();
       else if (kind === 'hide') {
         touchKeysWanted = false;
         syncTouchKeys();
@@ -583,6 +610,11 @@ if (isTouch) {
     if (!key) return;
     e.preventDefault();
     const k = key.dataset.k;
+    if (review) {
+      if (k === 'Backspace') review.backspace();
+      else review.typeLetter(k);
+      return;
+    }
     if (k === 'Backspace') game.spelling.backspace();
     else game.spelling.handleLetter(k);
   });
@@ -592,9 +624,10 @@ if (isTouch) {
     const open = !overlay.classList.contains('hidden');
     document.body.classList.toggle('overlay-open', open);
     syncTouchKeys();
-    if (!open && touchKeysWanted) setTimeout(() => game.spelling.focusInput(), 0);
+    if (!open && touchKeysWanted && !activeReview()) setTimeout(() => game.spelling.focusInput(), 0);
   };
   new MutationObserver(syncOverlay).observe(overlay, { attributes: true, attributeFilter: ['class'] });
+  document.addEventListener('review-state', () => syncTouchKeys());
   syncOverlay();
 }
 

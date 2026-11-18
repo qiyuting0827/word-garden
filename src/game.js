@@ -22,6 +22,8 @@ export class Game {
   constructor({ onFinish, onExit } = {}) {
     this.onFinish = onFinish || (() => {});
     this.onExit = onExit || (() => {});
+    this.autoPlant = localStorage.getItem('word-garden-auto') !== '0';
+    this.autoTimer = 0;
 
     LAYER.grid = $('grid-layer');
     LAYER.mower = $('mower-layer');
@@ -42,6 +44,7 @@ export class Game {
       if (document.hidden && this.running && !this.paused) this.pause();
     });
 
+    $('btn-auto').addEventListener('click', () => this.toggleAuto());
     $('btn-pause').addEventListener('click', () => this.togglePause());
     $('btn-mode').addEventListener('click', () => this.toggleMode());
     $('btn-sound').addEventListener('click', () => this.toggleSound());
@@ -56,7 +59,7 @@ export class Game {
       this.spelling.focusInput();
     });
     $('game').addEventListener('pointerdown', (e) => {
-      if (e.target.closest('#btn-pause, #btn-mode, #btn-sound')) return;
+      if (e.target.closest('#btn-pause, #btn-mode, #btn-sound, #btn-auto')) return;
       this.spelling.focusInput();
     });
 
@@ -94,6 +97,8 @@ export class Game {
 
     this.paused = false;
     this.running = true;
+    this.autoTimer = 0;
+    this.syncAutoButton();
     this.lastTime = performance.now();
 
     closeDialog();
@@ -225,6 +230,7 @@ export class Game {
     this.updateProjectiles(dt);
     this.updateZombies(dt);
     this.updateSuns(dt);
+    this.updateAuto(dt);
     this.updateMowers(dt);
     this.updateCards(dt);
     this.updateWave();
@@ -654,6 +660,108 @@ export class Game {
     this.updateSun(25);
     audio.play('sun');
     this.floatText(sun.x, sun.y - 20, '+25');
+  }
+
+  /* ================= 自动种植 ================= */
+  updateAuto(dt) {
+    if (!this.running || this.paused || !this.autoPlant) return;
+    this.autoTimer -= dt;
+    if (this.autoTimer > 0) return;
+    this.autoTimer = 500;
+    this.autoPlan();
+  }
+
+  autoPlan() {
+    // 自动收阳光：只收已经落地的
+    for (const sun of [...this.suns]) {
+      if (!sun.dead && !sun.falling) this.collectSun(sun);
+    }
+
+    const rows = Array.from({ length: GRID.rows }, (_, row) => ({
+      row, zombies: [], nearest: Infinity, weapons: 0, sunflowers: 0, snowpea: false,
+    }));
+    for (const p of this.plants) {
+      if (p.dead) continue;
+      const r = rows[p.row];
+      if (!r) continue;
+      if (p.type === 'sunflower') r.sunflowers++;
+      if (p.def.fire) r.weapons++;
+      if (p.type === 'snowpea') r.snowpea = true;
+    }
+    for (const z of this.zombies) {
+      if (z.dead) continue;
+      const r = rows[z.row];
+      if (!r) continue;
+      r.zombies.push(z);
+      r.nearest = Math.min(r.nearest, z.x);
+    }
+
+    const threatened = rows
+      .filter(r => r.zombies.length && r.weapons === 0)
+      .sort((a, b) => a.nearest - b.nearest);
+
+    // 有僵尸行但还没有武器：先保证火力，阳光不够时先攒钱
+    if (threatened.length) {
+      if (this.autoWeapon(threatened[0])) return;
+      if (this.sun < 150) return;
+    }
+
+    const totalSunflowers = rows.reduce((n, r) => n + r.sunflowers, 0);
+    const sunflowerTarget = Math.min(8, 6 + Math.max(0, this.diff - 1));
+    if (totalSunflowers < sunflowerTarget) {
+      const row = [...rows].sort((a, b) => a.sunflowers - b.sunflowers)[0];
+      for (const col of [0, 1, 2]) {
+        if (this.autoPlantAt('sunflower', col, row.row)) return;
+      }
+    }
+
+    // 按“武器少、僵尸近、僵尸多”的顺序补武器
+    const danger = rows
+      .filter(r => r.zombies.length && r.weapons < 3)
+      .sort((a, b) => (a.weapons - b.weapons) || (a.nearest - b.nearest) || (b.zombies.length - a.zombies.length));
+    if (danger.length) this.autoWeapon(danger[0]);
+  }
+
+  autoWeapon(r) {
+    if (!r || !r.zombies.length) return false;
+    const type = this.sun >= 175 && r.zombies.length >= 2 && !r.snowpea ? 'snowpea' : 'peashooter';
+    for (const col of [3, 2, 4, 1, 5, 0]) {
+      const pos = cellCenter(col, r.row);
+      if (pos.x >= r.nearest - 40) continue;
+      if (this.autoPlantAt(type, col, r.row)) return true;
+    }
+    return false;
+  }
+
+  autoPlantAt(type, col, row) {
+    const def = PLANTS[type];
+    if (!def || this.grid[row][col]) return false;
+    if (this.sun < def.cost) return false;
+    if ((this.cooldowns[type] || 0) > performance.now()) return false;
+    const prev = this.selected;
+    this.selected = type;
+    this.tryPlant(col, row);
+    const ok = this.grid[row][col]?.type === type;
+    this.selected = prev;
+    this.updateCardStates();
+    return ok;
+  }
+
+  syncAutoButton() {
+    const btn = $('btn-auto');
+    if (!btn) return;
+    btn.classList.toggle('on', this.autoPlant);
+    btn.title = this.autoPlant ? '自动种植：开' : '自动种植：关';
+    btn.textContent = this.autoPlant ? '🤖' : '🚫';
+  }
+
+  toggleAuto() {
+    this.autoPlant = !this.autoPlant;
+    try { localStorage.setItem('word-garden-auto', this.autoPlant ? '1' : '0'); } catch { /* ignore */ }
+    this.syncAutoButton();
+    this.autoTimer = 0;
+    toast(this.autoPlant ? '自动种植已开启' : '自动种植已关闭', 1200);
+    audio.play('click', { volume: 0.4 });
   }
 
   /* ================= 拼写奖励 ================= */

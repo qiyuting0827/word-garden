@@ -7,6 +7,9 @@ import { audio } from './audio.js';
 const $ = (id) => document.getElementById(id);
 const MINUTE = 60 * 1000;
 const EXTRA = 'abcdefghijklmnopqrstuvwxyz'.split('');
+const isTouch = window.matchMedia('(pointer: coarse)').matches
+  || navigator.maxTouchPoints > 0
+  || new URLSearchParams(location.search).has('touch');
 const isLetter = (ch) => !!ch && /[a-z0-9]/i.test(ch);
 
 function shuffle(list) {
@@ -37,6 +40,8 @@ export class ReviewSession {
     this.locked = false;
     this.timers = new Set();
     this.startedAt = Date.now();
+    this.closed = false;
+    this.finished = false;
   }
 
   later(fn, ms) {
@@ -62,6 +67,7 @@ export class ReviewSession {
       html: `
         <div class="review-head">
           <h2>📚 ${escapeHtml(this.title)}</h2>
+          <button class="review-close" id="rv-close" type="button" aria-label="关闭复习">✕</button>
           <p class="dialog-sub">按遗忘曲线排序 · 第 <b id="rv-i">1</b> / <span id="rv-n">${this.words.length}</span> 个</p>
         </div>
         <div class="review-progress"><i id="rv-bar"></i></div>
@@ -72,12 +78,13 @@ export class ReviewSession {
           <button class="review-speak" id="rv-speak">🔊 听发音</button>
         </div>
         <div class="review-slots" id="rv-slots"></div>
-        <div class="review-input-wrap">
+        <div class="review-input-wrap${isTouch ? ' hidden' : ''}">
           <input id="rv-input" autocomplete="off" autocorrect="off" autocapitalize="off"
+                 inputmode="${isTouch ? 'none' : 'text'}"
                  spellcheck="false" placeholder="输入单词，拼完自动检查" aria-label="输入单词" />
           <button class="review-check" id="rv-check">检查</button>
         </div>
-        <div class="review-tiles" id="rv-tiles"></div>
+        <div class="review-tiles${isTouch ? ' hidden' : ''}" id="rv-tiles"></div>
         <div class="review-tip" id="rv-tip">可以打字，也可以点下面的字母块</div>
         <div class="review-foot">
           <button class="ghost-btn" id="rv-back">⌫ 删除</button>
@@ -86,6 +93,7 @@ export class ReviewSession {
         </div>`,
     });
 
+    $('rv-close').addEventListener('click', () => this.close());
     $('rv-speak').addEventListener('click', () => {
       const w = this.words[this.index];
       if (w) speak(w.en);
@@ -129,7 +137,9 @@ export class ReviewSession {
     $('rv-emoji').textContent = w.emoji || '📘';
     $('rv-zh').textContent = w.zh || w.en;
     $('rv-ipa').textContent = w.ipa || '';
-    $('rv-tip').textContent = '可以打字，也可以点下面的字母块';
+    $('rv-tip').textContent = isTouch
+      ? '点下方键盘输入，拼完自动检查'
+      : '可以打字，也可以点下面的字母块';
     $('rv-tip').classList.remove('bad');
     $('rv-card').classList.remove('right', 'wrong');
     $('rv-input').disabled = false;
@@ -139,7 +149,7 @@ export class ReviewSession {
     speak(w.en, { rate: 0.85 });
     setTimeout(() => {
       const input = $('rv-input');
-      if (input && !this.locked) {
+      if (!isTouch && input && !this.locked) {
         try { input.focus({ preventScroll: true }); } catch { input.focus(); }
       }
     }, 60);
@@ -234,7 +244,7 @@ export class ReviewSession {
     this.render();
     this.renderTiles();
     const input = $('rv-input');
-    if (input) {
+    if (!isTouch && input) {
       try { input.focus({ preventScroll: true }); } catch { input.focus(); }
     }
   }
@@ -251,7 +261,7 @@ export class ReviewSession {
     this.render();
     this.renderTiles();
     $('rv-tip').textContent = '已提示首字母，继续加油';
-    $('rv-input').focus();
+    if (!isTouch) $('rv-input').focus();
   }
 
   check() {
@@ -308,7 +318,9 @@ export class ReviewSession {
   }
 
   finish() {
+    this.finished = true;
     this.clearTimers();
+    document.dispatchEvent(new Event('review-state'));
     const total = this.correct + this.wrong;
     const pct = total ? Math.round((this.correct / total) * 100) : 0;
     $('rv-bar').style.width = '100%';
@@ -332,6 +344,19 @@ export class ReviewSession {
       }],
     });
     audio.play('win', { volume: 0.35 });
+  }
+
+  close() {
+    if (this.closed) return;
+    this.closed = true;
+    this.clearTimers();
+    closeDialog();
+    this.onDone({
+      total: this.correct + this.wrong,
+      correct: this.correct,
+      wrong: this.wrong,
+      canceled: true,
+    });
   }
 
   stop() {
