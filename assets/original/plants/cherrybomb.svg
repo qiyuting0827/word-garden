@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <radialGradient id="cherry" cx="35%" cy="28%" r="75%">
+      <stop offset="0" stop-color="#ff8b7a"/>
+      <stop offset=".5" stop-color="#e63f42"/>
+      <stop offset="1" stop-color="#a51f2b"/>
+    </radialGradient>
+    <radialGradient id="cherry2" cx="35%" cy="28%" r="75%">
+      <stop offset="0" stop-color="#ff9a7e"/>
+      <stop offset=".5" stop-color="#d9343a"/>
+      <stop offset="1" stop-color="#961c26"/>
+    </radialGradient>
+    <radialGradient id="spark" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#fffbe0"/>
+      <stop offset=".5" stop-color="#ffd34d"/>
+      <stop offset="1" stop-color="#ff8a1f" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="50" cy="94" rx="28" ry="6" fill="#2f1a08" opacity=".2"/>
+  <path d="M40 52C42 36 50 24 58 16" fill="none" stroke="#4d8a28" stroke-width="4" stroke-linecap="round"/>
+  <path d="M66 58c-2-16 2-30 10-38" fill="none" stroke="#4d8a28" stroke-width="4" stroke-linecap="round"/>
+  <path d="M58 16c8-5 16-4 22 2-6 7-15 9-22 3z" fill="#63b32e" stroke="#3f7d1c" stroke-width="1.5"/>
+  <circle cx="38" cy="68" r="22" fill="url(#cherry)" stroke="#7d1620" stroke-width="2"/>
+  <circle cx="68" cy="72" r="19" fill="url(#cherry2)" stroke="#7d1620" stroke-width="2"/>
+  <ellipse cx="32" cy="60" rx="6" ry="4" fill="#fff" opacity=".35" transform="rotate(-25 32 60)"/>
+  <ellipse cx="63" cy="65" rx="5" ry="3.4" fill="#fff" opacity=".3" transform="rotate(-25 63 65)"/>
+  <ellipse cx="32" cy="70" rx="2.6" ry="3.6" fill="#2c1708"/>
+  <ellipse cx="44" cy="70" rx="2.6" ry="3.6" fill="#2c1708"/>
+  <path d="M31 78c4 4 10 4 14 0" fill="none" stroke="#2c1708" stroke-width="2.2" stroke-linecap="round"/>
+  <ellipse cx="63" cy="74" rx="2.4" ry="3.2" fill="#2c1708"/>
+  <ellipse cx="73" cy="74" rx="2.4" ry="3.2" fill="#2c1708"/>
+  <path d="M62 81c3 3 8 3 11 0" fill="none" stroke="#2c1708" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="58" cy="14" r="13" fill="url(#spark)"/>
+  <path d="M58 4v6M50 10l4 3M66 10l-4 3M54 18l3-4M62 18l-3-4" stroke="#ffcf3f" stroke-width="2" stroke-linecap="round"/>
+</svg>

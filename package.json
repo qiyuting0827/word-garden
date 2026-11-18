@@ -1,0 +1,11 @@
+{
+  "name": "pvz-spelling",
+  "version": "0.2.0",
+  "private": true,
+  "description": "单词花园 Word Garden - 植物大战僵尸风格的英语拼写游戏（原创素材 / CSV 词表 / 遗忘曲线复习）",
+  "type": "module",
+  "scripts": {
+    "dev": "node server.mjs",
+    "start": "node server.mjs"
+  }
+}

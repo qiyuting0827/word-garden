@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>单词花园 · Word Garden</title>
+<link rel="icon" href="./assets/favicon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+<div id="viewport">
+  <div id="stage">
+
+    <!-- ============ 主菜单 ============ -->
+    <section id="menu" class="screen">
+      <div class="menu-bg"></div>
+      <div class="menu-inner">
+        <header class="menu-head">
+          <h1>单词花园</h1>
+          <p class="subtitle">WORD&nbsp;GARDEN</p>
+          <p class="tagline">拼出单词，守护草坪</p>
+        </header>
+        <div class="menu-panel">
+          <div class="menu-modes">
+            <span class="menu-label">拼写方式</span>
+            <div class="seg" id="menu-mode">
+              <button data-mode="type" class="active">⌨️ 键盘拼写</button>
+              <button data-mode="tiles">🔤 点选字母</button>
+            </div>
+          </div>
+          <div class="menu-tools">
+            <button id="btn-review" class="tool-btn">🔁 复习错词 <span id="review-count" class="due-badge">0</span></button>
+            <button id="btn-import" class="tool-btn">📥 导入词表 <small>CSV / 教材单元</small></button>
+          </div>
+          <div id="unit-list" class="unit-list"></div>
+        </div>
+        <footer class="menu-foot">
+          <span>🌱 答对单词获得阳光与魔法弹</span>
+          <span>🧟 别让僵尸走到房子里</span>
+        </footer>
+      </div>
+    </section>
+
+    <!-- ============ 游戏 ============ -->
+    <section id="game" class="screen hidden">
+      <div id="topbar">
+        <div class="sun-meter" id="sun-meter" title="阳光">
+          <img src="./assets/original/sun.svg" alt="" />
+          <span id="sun-count">50</span>
+        </div>
+        <div id="seedbar" class="seedbar"></div>
+        <div class="wave-meter">
+          <div class="wave-track"><div id="wave-fill"></div></div>
+          <span id="wave-text">第 1 波</span>
+        </div>
+        <div class="top-actions">
+          <button id="btn-mode" class="icon-btn" title="切换拼写方式">⌨️</button>
+          <button id="btn-sound" class="icon-btn" title="音效">🔊</button>
+          <button id="btn-pause" class="icon-btn" title="暂停">⏸</button>
+        </div>
+      </div>
+
+      <div id="lawn">
+        <img class="lawn-bg" src="./assets/original/lawn.svg" alt="" draggable="false" />
+        <div id="grid-layer" class="layer"></div>
+        <div id="mower-layer" class="layer"></div>
+        <div id="plant-layer" class="layer"></div>
+        <div id="zombie-layer" class="layer"></div>
+        <div id="projectile-layer" class="layer"></div>
+        <div id="sun-layer" class="layer"></div>
+        <div id="fx-layer" class="layer"></div>
+        <div id="toast" class="toast"></div>
+      </div>
+
+      <aside id="panel">
+        <div class="panel-top">
+          <span id="level-name" class="level-name">动物朋友</span>
+          <span class="combo" id="combo">连击 ×0</span>
+        </div>
+        <div class="word-card" id="word-card">
+          <div class="word-emoji" id="word-emoji">🐱</div>
+          <div class="word-zh" id="word-zh">猫</div>
+          <div class="word-ipa" id="word-ipa">/kæt/</div>
+          <button class="speak-btn" id="btn-speak" title="朗读单词">🔊 听发音</button>
+        </div>
+
+        <div class="slots" id="slots"></div>
+
+        <div id="type-area" class="type-area">
+          <div class="type-box" id="type-box">
+            <span id="type-echo" class="type-echo"></span>
+            <span class="caret"></span>
+          </div>
+          <p class="type-tip">直接敲键盘输入，拼完自动判定</p>
+          <input id="hidden-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+        </div>
+
+        <div id="tiles-area" class="tiles-area hidden">
+          <div id="tiles" class="tiles"></div>
+          <button id="btn-backspace" class="tile-tool">⌫ 删除</button>
+          <p class="type-tip">点字母块拼出单词</p>
+        </div>
+
+        <div class="energy-wrap">
+          <div class="energy-head">
+            <span>⚡ 单词能量</span>
+            <span id="energy-num">0 / 100</span>
+          </div>
+          <div class="energy-track"><div id="energy-fill"></div></div>
+          <button id="btn-storm" class="storm-btn" disabled>单词风暴</button>
+        </div>
+
+        <div class="panel-foot">
+          <button id="btn-hint" class="ghost-btn">💡 首字母提示</button>
+          <button id="btn-skip" class="ghost-btn">⏭ 跳过</button>
+        </div>
+      </aside>
+
+      <div id="footer">
+        <span id="footer-tip">拼对单词 → 阳光 +10 · 魔法弹 · 连击加成</span>
+        <span id="wrong-count">错词 0</span>
+      </div>
+    </section>
+
+    <!-- ============ 弹层 ============ -->
+    <div id="overlay" class="overlay hidden">
+      <div class="dialog" id="dialog"></div>
+    </div>
+
+  </div>
+</div>
+
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>

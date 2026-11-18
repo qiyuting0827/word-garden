@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <linearGradient id="skin" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#b6d98c"/>
+      <stop offset="1" stop-color="#7fa85a"/>
+    </linearGradient>
+    <linearGradient id="coat" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7b7898"/>
+      <stop offset="1" stop-color="#4f4d68"/>
+    </linearGradient>
+    <linearGradient id="metal" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#9aa3ab"/>
+      <stop offset=".35" stop-color="#d6dde2"/>
+      <stop offset=".65" stop-color="#8c959e"/>
+      <stop offset="1" stop-color="#6b747c"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="64" cy="116" rx="34" ry="6" fill="#1d2a10" opacity=".25"/>
+
+  <path d="M78 80l8 24 6-1-4-25z" fill="#4a4b63"/>
+  <path d="M84 104h20c3 0 4 3 4 6H82c-2 0-2-6 2-6z" fill="#2b241d"/>
+  <path d="M60 80l-8 25 8 2 10-25z" fill="#3d3e54"/>
+  <path d="M48 105h20c3 0 4 3 3 6H46c-3 0-2-6 2-6z" fill="#2b241d"/>
+
+  <path d="M74 58L38 66" stroke="#5a5875" stroke-width="13" stroke-linecap="round"/>
+  <path d="M38 66l-8 2" stroke="#8fb466" stroke-width="9" stroke-linecap="round"/>
+  <circle cx="26" cy="69" r="7" fill="url(#skin)" stroke="#5f7f40" stroke-width="1.5"/>
+  <path d="M20 66l-4 3M20 72l-4 1" stroke="#5f7f40" stroke-width="2" stroke-linecap="round"/>
+
+  <path d="M56 48l32-3 8 38-34 4-10-22z" fill="url(#coat)" stroke="#3c3a52" stroke-width="2"/>
+  <path d="M58 50l14 3-6 12-10-6z" fill="#e6e2d2"/>
+  <path d="M66 55l4 2-3 11-4-9z" fill="#b8403a"/>
+  <path d="M56 74l6 13 7-14 8 13 10-14" fill="#4a4863" stroke="#3c3a52" stroke-width="1.5"/>
+  <path d="M58 82l30-3" stroke="#333146" stroke-width="4"/>
+  <rect x="70" y="78" width="7" height="5" rx="1" fill="#d8b25a"/>
+
+  <path d="M82 64L46 78" stroke="#6b6988" stroke-width="12" stroke-linecap="round"/>
+  <path d="M46 78l-12 3" stroke="#8fb466" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="32" cy="82" r="6.5" fill="url(#skin)" stroke="#5f7f40" stroke-width="1.5"/>
+  <path d="M27 79l-4 2M28 85l-4 1" stroke="#5f7f40" stroke-width="2" stroke-linecap="round"/>
+
+  <path d="M80 45l6 4-2 9-8-3z" fill="#7fa85a"/>
+  <ellipse cx="77" cy="31" rx="18" ry="19" fill="url(#skin)" stroke="#5f7f40" stroke-width="2"/>
+  <path d="M92 30c4-2 7 1 7 5s-3 6-7 5z" fill="#8fb466" stroke="#5f7f40" stroke-width="1.5"/>
+  <ellipse cx="69" cy="27" rx="4.6" ry="5.8" fill="#f7f4df"/>
+  <circle cx="67.6" cy="28" r="2.5" fill="#242417"/>
+  <circle cx="66.8" cy="27" r=".8" fill="#fff"/>
+  <path d="M62 20c3-2 7-2 10 1" fill="none" stroke="#4e6b34" stroke-width="2.2" stroke-linecap="round"/>
+  <path d="M63 40c5 4 12 3 15-1" fill="none" stroke="#4e6b34" stroke-width="2.2" stroke-linecap="round"/>
+  <path d="M64 43c5 6 13 5 16 0-3 2-6 2-8 4-3-1-5-3-8-4z" fill="#3d2b20"/>
+  <path d="M66 45l3 3 3-3 3 2" fill="#f2eddc"/>
+
+  <!-- 铁桶 -->
+  <path d="M55 12c0-5 4-8 9-8h28c5 0 9 3 9 8v14c0 5-4 8-9 8H64c-5 0-9-3-9-8z" fill="url(#metal)" stroke="#555e66" stroke-width="2"/>
+  <ellipse cx="78" cy="5" rx="23" ry="6" fill="#cfd6db" stroke="#555e66" stroke-width="2"/>
+  <ellipse cx="78" cy="5" rx="15" ry="3.4" fill="#8c959e" opacity=".7"/>
+  <path d="M57 12h42M56 22h44" stroke="#6b747c" stroke-width="1.6" opacity=".8"/>
+  <path d="M63 0c4-5 12-6 17-3" fill="none" stroke="#636c74" stroke-width="2.5"/>
+  <path d="M88 9l6 4-4 7" fill="none" stroke="#8c959e" stroke-width="2"/>
+  <path d="M60 28l-2-6M84 28l3-7" stroke="#4f585f" stroke-width="2" opacity=".7"/>
+  <circle cx="96" cy="20" r="4" fill="#aeb7be" stroke="#6b747c" stroke-width="1.5"/>
+</svg>

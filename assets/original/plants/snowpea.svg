@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <radialGradient id="head" cx="38%" cy="28%" r="74%">
+      <stop offset="0" stop-color="#d9f7ff"/>
+      <stop offset=".5" stop-color="#8ed7f2"/>
+      <stop offset="1" stop-color="#4e9fc4"/>
+    </radialGradient>
+    <linearGradient id="stem" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#79c6b0"/>
+      <stop offset="1" stop-color="#3b7f72"/>
+    </linearGradient>
+    <radialGradient id="snout" cx="40%" cy="30%" r="80%">
+      <stop offset="0" stop-color="#e8fcff"/>
+      <stop offset="1" stop-color="#67b7d8"/>
+    </radialGradient>
+  </defs>
+  <path d="M44 98V48" stroke="url(#stem)" stroke-width="9" stroke-linecap="round"/>
+  <path d="M44 84c-16 2-26-8-28-19 13-2 25 4 28 19z" fill="#59a98e"/>
+  <path d="M44 92c15 1 24-8 26-19-12-2-23 4-26 19z" fill="#4a9880"/>
+  <g transform="translate(45 39)">
+    <path d="M-14-18l4-11 5 11 5-14 6 14 6-10 3 11z" fill="#e8fbff" stroke="#79bcd4" stroke-width="1.2"/>
+    <circle r="22" fill="url(#head)" stroke="#3f8aa8" stroke-width="2"/>
+    <path d="M20-4h20c5 0 8 3 8 8s-3 8-8 8H22z" fill="url(#snout)" stroke="#3f8aa8" stroke-width="2"/>
+    <ellipse cx="48" cy="4" rx="5" ry="7" fill="#8ed7f2" stroke="#3f8aa8" stroke-width="1.6"/>
+    <ellipse cx="47" cy="4" rx="2.2" ry="3.2" fill="#1d5872"/>
+    <ellipse cx="-6" cy="-7" rx="4.2" ry="5.4" fill="#fff"/>
+    <circle cx="-5" cy="-6" r="2.4" fill="#173b4c"/>
+    <circle cx="-5.8" cy="-7" r=".8" fill="#fff"/>
+    <path d="M-14-15c3-3 8-3 11-1" fill="none" stroke="#2d6d85" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M4 10c4 3 8 3 11-1" fill="none" stroke="#2d6d85" stroke-width="2.2" stroke-linecap="round"/>
+    <g fill="#dff8ff" opacity=".9">
+      <circle cx="-15" cy="8" r="1.6"/><circle cx="12" cy="-14" r="1.4"/><circle cx="2" cy="15" r="1.2"/>
+    </g>
+  </g>
+</svg>

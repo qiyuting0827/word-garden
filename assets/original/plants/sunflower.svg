@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <radialGradient id="petal" cx="45%" cy="35%" r="70%">
+      <stop offset="0" stop-color="#ffe977"/>
+      <stop offset="1" stop-color="#f5b21f"/>
+    </radialGradient>
+    <radialGradient id="face" cx="42%" cy="38%" r="70%">
+      <stop offset="0" stop-color="#b97a32"/>
+      <stop offset="1" stop-color="#7d4718"/>
+    </radialGradient>
+    <linearGradient id="stem" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6cba3c"/>
+      <stop offset="1" stop-color="#3a7d1c"/>
+    </linearGradient>
+  </defs>
+  <path d="M50 98V62" stroke="url(#stem)" stroke-width="8" stroke-linecap="round"/>
+  <path d="M50 84c-16 2-26-8-28-18 13-2 25 3 28 18z" fill="#5faf33"/>
+  <path d="M50 90c15 1 24-8 26-18-12-2-23 3-26 18z" fill="#4f9a29"/>
+  <g transform="translate(50 40)">
+    <g fill="url(#petal)" stroke="#e09a12" stroke-width="1.2">
+      <ellipse cx="0" cy="-27" rx="9" ry="17"/>
+      <ellipse cx="0" cy="-27" rx="9" ry="17" transform="rotate(30)"/>
+      <ellipse cx="0" cy="-27" rx="9" ry="17" transform="rotate(60)"/>
+      <ellipse cx="0" cy="-27" rx="9" ry="17" transform="rotate(90)"/>
+      <ellipse cx="0" cy="-27" rx="9" ry="17" transform="rotate(120)"/>
+      <ellipse cx="0" cy="-27" rx="9" ry="17" transform="rotate(150)"/>
+      <ellipse cx="0" cy="-27" rx="9" ry="17" transform="rotate(180)"/>
+      <ellipse cx="0" cy="-27" rx="9" ry="17" transform="rotate(210)"/>
+      <ellipse cx="0" cy="-27" rx="9" ry="17" transform="rotate(240)"/>
+      <ellipse cx="0" cy="-27" rx="9" ry="17" transform="rotate(270)"/>
+      <ellipse cx="0" cy="-27" rx="9" ry="17" transform="rotate(300)"/>
+      <ellipse cx="0" cy="-27" rx="9" ry="17" transform="rotate(330)"/>
+    </g>
+    <circle r="21" fill="url(#face)" stroke="#6a3a10" stroke-width="2"/>
+    <ellipse cx="-8" cy="-5" rx="3.4" ry="4.6" fill="#2c1708"/>
+    <ellipse cx="8" cy="-5" rx="3.4" ry="4.6" fill="#2c1708"/>
+    <circle cx="-7" cy="-6.6" r="1.2" fill="#fff"/>
+    <circle cx="9" cy="-6.6" r="1.2" fill="#fff"/>
+    <path d="M-7 6c4 5 10 5 14 0" fill="none" stroke="#2c1708" stroke-width="2.4" stroke-linecap="round"/>
+    <circle cx="-14" cy="5" r="3" fill="#e87a4a" opacity=".55"/>
+    <circle cx="14" cy="5" r="3" fill="#e87a4a" opacity=".55"/>
+  </g>
+</svg>
