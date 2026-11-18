@@ -250,7 +250,6 @@ export class Game {
       return;
     }
 
-    this.sun -= def.cost;
     this.updateSun(-def.cost);
     this.cooldowns[type] = performance.now() + def.cooldown;
 
