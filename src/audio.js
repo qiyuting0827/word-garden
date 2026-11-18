@@ -1,7 +1,9 @@
-// 原创合成音效：不依赖任何外部音频文件
-// 用 Web Audio 现场合成，音量小、无版权素材
+// 音效：本地默认经典 MP3，原创皮肤使用 Web Audio 合成
+import { classic } from './skin.js';
+
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
+/* ================= 原创合成音效 ================= */
 function tone(ctx, out, {
   freq = 440, to = freq, dur = 0.12, type = 'sine',
   vol = 0.2, attack = 0.006, delay = 0, detune = 0,
@@ -131,12 +133,37 @@ const SOUNDS = {
   },
 };
 
+/* ================= 经典 MP3 音效 ================= */
+const CLASSIC_FILES = {
+  click: 'buttonclick',
+  plant: 'plant_water',
+  sun: 'points',
+  shoot: 'bowlingimpact',
+  hit: 'bowlingimpact2',
+  chomp: 'chomp',
+  explode: 'explosion',
+  cherry: 'cherrybomb',
+  siren: 'siren',
+  huge: 'hugewave',
+  ready: 'readysetplant',
+  groan: 'groan3',
+  freeze: 'frozen',
+  mower: 'lawnmower',
+  lose: 'losemusic',
+  win: 'winmusic',
+  evillaugh: 'evillaugh',
+};
+
+const POOL_SIZE = 3;
+
 class AudioManager {
   constructor() {
     this.muted = localStorage.getItem('word-garden-muted') === '1';
     this.volume = 0.6;
     this.ctx = null;
     this.master = null;
+    this.pools = {};
+    this.turn = 0;
   }
 
   ensure() {
@@ -153,13 +180,49 @@ class AudioManager {
     return this.ctx;
   }
 
-  preload() {
-    // 首次用户手势时创建 AudioContext；无需加载文件
-    this.ensure();
+  buildPools() {
+    if (!classic || Object.keys(this.pools).length) return;
+    for (const name of Object.values(CLASSIC_FILES)) {
+      const src = `./assets/pvz/sfx/${name}.mp3`;
+      this.pools[name] = Array.from({ length: POOL_SIZE }, () => {
+        const el = new Audio(src);
+        el.preload = 'auto';
+        return el;
+      });
+    }
   }
 
-  play(key, { volume = this.volume, rate = 1 } = {}) {
-    if (this.muted) return;
+  preload() {
+    this.buildPools();
+    // 合成音效需要用户手势后创建 AudioContext
+    if (!classic) this.ensure();
+    else this.ensure();
+  }
+
+  playClassic(key, volume, rate) {
+    const name = CLASSIC_FILES[key];
+    const pool = name && this.pools[name];
+    if (!pool) return false;
+    const el = pool[this.turn++ % pool.length];
+    try {
+      el.pause();
+      el.currentTime = 0;
+      el.volume = clamp(volume, 0, 1);
+      el.playbackRate = clamp(rate, 0.5, 2);
+      const p = el.play();
+      if (p && p.catch) {
+        p.catch(() => {
+          // 文件加载失败时退回合成音，保证游戏有反馈
+          this.playSynth(key, { volume, rate });
+        });
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  playSynth(key, { volume = this.volume, rate = 1 } = {}) {
     const fn = SOUNDS[key];
     if (!fn) return;
     const ctx = this.ensure();
@@ -171,13 +234,21 @@ class AudioManager {
     }
   }
 
+  play(key, { volume = this.volume, rate = 1 } = {}) {
+    if (this.muted) return;
+    if (classic && this.playClassic(key, volume, rate)) return;
+    this.playSynth(key, { volume, rate });
+  }
+
   setMuted(muted) {
     this.muted = muted;
     localStorage.setItem('word-garden-muted', muted ? '1' : '0');
-    if (!muted) {
-      this.ensure();
-      this.play('click', { volume: 0.25 });
+    if (muted) {
+      Object.values(this.pools).flat().forEach((el) => el.pause());
+      return;
     }
+    this.ensure();
+    this.play('click', { volume: 0.25 });
   }
 }
 

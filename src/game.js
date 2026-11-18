@@ -1,7 +1,8 @@
 import {
   GRID, SPAWN_X, HOUSE_X, MOWER_X, PLANTS, ZOMBIES,
-  cellCenter, rowY, buildSpawns, totalZombies, DIFF_HP_SCALE, SPELL, WAVES,
+  cellCenter, rowY, buildSpawns, totalZombies, DIFF_HP_SCALE, SPELL, WAVES, ART,
 } from './config.js';
+import { classic } from './skin.js';
 import { audio } from './audio.js';
 import { toast, showDialog, closeDialog } from './ui.js';
 import { Spelling } from './spelling.js';
@@ -175,11 +176,11 @@ export class Game {
     for (let r = 0; r < GRID.rows; r++) {
       const el = document.createElement('img');
       el.className = 'mower';
-      el.src = './assets/original/mower.svg';
+      el.src = ART.mower;
       el.style.left = `${MOWER_X}px`;
       el.style.top = `${rowY(r) + 44}px`;
-      el.style.width = '76px';
-      el.style.height = '62px';
+      el.style.width = classic ? '70px' : '76px';
+      el.style.height = classic ? '57px' : '62px';
       el.style.position = 'absolute';
       el.style.transform = 'translate(-50%, -100%)';
       el.style.pointerEvents = 'none';
@@ -335,11 +336,20 @@ export class Game {
     this.grid[plant.row][plant.col] = null;
     plant.el.remove();
     const fx = document.createElement('div');
-    fx.className = 'boom';
-    fx.style.left = `${plant.x}px`;
-    fx.style.top = `${plant.y}px`;
-    LAYER.fx.appendChild(fx);
-    setTimeout(() => fx.remove(), 520);
+    if (classic && ART.boom) {
+      fx.className = 'boom-gif';
+      fx.innerHTML = `<img src="${ART.boom}" alt="" draggable="false" />`;
+      fx.style.left = `${plant.x}px`;
+      fx.style.top = `${plant.y}px`;
+      LAYER.fx.appendChild(fx);
+      setTimeout(() => fx.remove(), 900);
+    } else {
+      fx.className = 'boom';
+      fx.style.left = `${plant.x}px`;
+      fx.style.top = `${plant.y}px`;
+      LAYER.fx.appendChild(fx);
+      setTimeout(() => fx.remove(), 520);
+    }
     audio.play('cherry');
     audio.play('explode', { volume: 0.5 });
     this.shake();
@@ -411,10 +421,15 @@ export class Game {
       z.el.classList.toggle('slow', slowed);
 
       const target = this.plantToEat(z);
+      const state = target ? 'eat' : 'walk';
+      if (z.state !== state) {
+        z.state = state;
+        const src = state === 'eat' ? z.def.attack : z.def.walk;
+        if (src && z.img.getAttribute('src') !== src) z.img.src = src;
+      }
       z.el.classList.toggle('eating', !!target);
       z.el.classList.toggle('walking', !target);
       if (target) {
-        z.state = 'eat';
         target.hp -= z.def.dps * (dt / 1000);
         this.updateHp(target);
         z.nextChomp -= dt;
@@ -424,7 +439,6 @@ export class Game {
         }
         if (target.hp <= 0) this.killPlant(target);
       } else {
-        z.state = 'walk';
         const speed = z.def.speed * (slowed ? 0.45 : 1);
         z.x -= speed * (dt / 1000);
         z.el.style.left = `${z.x}px`;
@@ -483,8 +497,15 @@ export class Game {
 
   killZombie(z) {
     z.dead = true;
-    z.el.classList.add('dying');
-    setTimeout(() => z.el.remove(), 750);
+    z.state = 'die';
+    if (z.def.die) {
+      z.img.src = z.def.die;
+      z.el.classList.add('dying-gif');
+      setTimeout(() => z.el.remove(), 900);
+    } else {
+      z.el.classList.add('dying');
+      setTimeout(() => z.el.remove(), 750);
+    }
     this.killed += 1;
     this.energy = Math.min(100, this.energy + 6);
     this.spelling.setEnergy(this.energy);
@@ -593,7 +614,7 @@ export class Game {
   createSun(x, y, targetY, falling) {
     const el = document.createElement('div');
     el.className = 'sun' + (falling ? ' falling' : '');
-    el.innerHTML = '<img src="./assets/original/sun.svg" alt="阳光" draggable="false" />';
+    el.innerHTML = `<img src="${ART.sun}" alt="阳光" draggable="false" />`;
     el.style.left = `${x}px`;
     el.style.top = `${y}px`;
     LAYER.sun.appendChild(el);

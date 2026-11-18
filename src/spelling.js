@@ -13,6 +13,7 @@ function shuffle(list) {
 }
 
 const EXTRA_LETTERS = 'abcdefghijklmnopqrstuvwxyz'.split('');
+const isLetter = (ch) => !!ch && /[a-z0-9]/i.test(ch);
 
 export class Spelling {
   constructor({ onCorrect, onWrong } = {}) {
@@ -195,11 +196,12 @@ export class Spelling {
 
   buildTiles() {
     if (!this.current) return;
-    const letters = this.current.en.split('');
+    const letters = (this.current.en.toLowerCase()).match(/[a-z0-9]/g) || [];
     const extras = [];
     const pool = EXTRA_LETTERS.filter(c => !letters.includes(c));
     for (let i = 0; i < 2; i++) extras.push(pool[Math.floor(Math.random() * pool.length)]);
     this.tiles = shuffle([...letters, ...extras]).map(ch => ({ ch, used: false }));
+    this.el.tiles.classList.toggle('dense', letters.length > 14);
   }
 
   render() {
@@ -213,7 +215,12 @@ export class Spelling {
     for (let i = 0; i < w.length; i++) {
       const slot = document.createElement('span');
       slot.className = 'slot';
-      if (i < this.typed.length) {
+      if (w[i] === ' ') {
+        slot.classList.add('space');
+      } else if (!isLetter(w[i])) {
+        slot.classList.add('punct');
+        slot.textContent = w[i];
+      } else if (i < this.typed.length) {
         slot.textContent = this.typed[i];
         slot.classList.add('filled');
       } else if (i === this.typed.length && !this.locked) {
@@ -277,7 +284,7 @@ export class Spelling {
 
     if (e.key.length === 1) {
       const ch = e.key.toLowerCase();
-      if (ch >= 'a' && ch <= 'z') {
+      if (isLetter(ch)) {
         e.preventDefault();
         this.handleLetter(ch);
       }
@@ -287,16 +294,26 @@ export class Spelling {
   handleInput(e) {
     if (!this.active) return;
     const el = e.target;
-    const value = (el.value || '').toLowerCase().replace(/[^a-z]/g, '');
+    const value = (el.value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
     el.value = '';
     if (!value) return;
     for (const ch of value) this.handleLetter(ch);
   }
 
+  advanceSeparators() {
+    if (!this.current) return;
+    const answer = this.current.en;
+    while (this.typed.length < answer.length && !isLetter(answer[this.typed.length])) {
+      this.typed += answer[this.typed.length];
+    }
+  }
+
   handleLetter(ch) {
     if (!this.active || this.locked || this.resolving || !this.current) return;
+    if (!isLetter(ch)) return;
     if (this.typed.length >= this.current.en.length) return;
     this.typed += ch;
+    this.advanceSeparators();
     this.render();
     if (this.typed.length === this.current.en.length) this.resolve();
   }
@@ -309,6 +326,7 @@ export class Spelling {
     tile.used = true;
     this.picked.push(index);
     this.typed += tile.ch;
+    this.advanceSeparators();
     this.render();
     if (this.typed.length === this.current.en.length) this.resolve();
   }
@@ -316,9 +334,16 @@ export class Spelling {
   backspace() {
     if (!this.current || this.locked || this.resolving) return;
     if (!this.typed.length) return;
-    this.typed = this.typed.slice(0, -1);
-    if (this.mode === 'tiles' && this.picked.length) {
-      const index = this.picked.pop();
+    let end = this.typed.length;
+    while (end > 0 && !isLetter(this.typed[end - 1])) end -= 1;
+    if (end === 0) return;
+    const removed = this.typed[end - 1];
+    this.typed = this.typed.slice(0, end - 1);
+    if (this.mode === 'tiles') {
+      let index = this.picked.pop();
+      if (index === undefined) {
+        index = this.tiles.findIndex(t => t.used && t.ch === removed);
+      }
       if (this.tiles[index]) this.tiles[index].used = false;
     }
     this.render();
@@ -327,7 +352,7 @@ export class Spelling {
   resolve() {
     if (!this.current) return;
     const answer = this.current.en;
-    if (this.typed === answer) {
+    if (this.typed.toLowerCase() === answer.toLowerCase()) {
       this.resolveCorrect();
     } else {
       this.resolveWrong();
@@ -382,9 +407,10 @@ export class Spelling {
       this.buildTiles();
       if (this.mistakes >= 2 && !this.hintUsed) {
         this.hintUsed = true;
-        this.typed = this.current.en[0];
+        this.typed = this.current.en[0].toLowerCase();
+        this.advanceSeparators();
         this.el.hint.disabled = true;
-        this.markTileUsed(this.current.en[0]);
+        this.markTileUsed(this.typed);
       }
       this.render();
       this.focusInput();
@@ -399,7 +425,8 @@ export class Spelling {
   showHint() {
     if (!this.current || this.hintUsed || this.locked || this.resolving) return;
     this.hintUsed = true;
-    this.typed = this.current.en[0];
+    this.typed = this.current.en[0].toLowerCase();
+    this.advanceSeparators();
     this.markTileUsed(this.typed);
     this.el.hint.disabled = true;
     this.render();

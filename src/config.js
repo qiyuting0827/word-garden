@@ -1,4 +1,6 @@
 // 游戏数值与关卡配置（坐标均为草坪局部坐标：1400 x 600）
+import { classic, asset } from './skin.js';
+
 export const STAGE = { w: 1760, h: 760 };
 
 export const GRID = {
@@ -21,44 +23,45 @@ export const cellCenter = (col, row) => ({
 
 export const rowY = (row) => GRID.y + (row + 0.5) * GRID.ch;
 
+const pvz = (p) => `./assets/pvz/${p}`;
+const orig = (p) => `./assets/original/${p}`;
+
 export const PLANTS = {
   sunflower: {
     name: '向日葵', cost: 50, hp: 300, cooldown: 5000,
-    img: './assets/original/plants/sunflower.svg',
-    card: './assets/original/plants/sunflower.svg',
-    w: 94, h: 96, anchorY: 30,
+    img: asset(pvz('plants/sunflower.gif'), orig('plants/sunflower.svg')),
+    card: asset(pvz('cards/sunflower.png'), orig('plants/sunflower.svg')),
+    w: classic ? 78 : 94, h: classic ? 79 : 96, anchorY: classic ? 22 : 30,
     produce: 9000, sunValue: 25,
   },
   peashooter: {
     name: '豌豆射手', cost: 100, hp: 300, cooldown: 5000,
-    img: './assets/original/plants/peashooter.svg',
-    card: './assets/original/plants/peashooter.svg',
-    w: 94, h: 94, anchorY: 26,
+    img: asset(pvz('plants/peashooter.gif'), orig('plants/peashooter.svg')),
+    card: asset(pvz('cards/peashooter.png'), orig('plants/peashooter.svg')),
+    w: classic ? 74 : 94, h: classic ? 74 : 94, anchorY: classic ? 20 : 26,
     fire: 1450, damage: 20, projectile: 'pea',
   },
   wallnut: {
     name: '坚果墙', cost: 50, hp: 1600, cooldown: 12000,
-    img: './assets/original/plants/wallnut.svg',
-    card: './assets/original/plants/wallnut.svg',
-    w: 82, h: 94, anchorY: 24,
-    imgs: [
-      './assets/original/plants/wallnut.svg',
-      './assets/original/plants/wallnut_cracked1.svg',
-      './assets/original/plants/wallnut_cracked2.svg',
-    ],
+    img: asset(pvz('plants/wallnut.gif'), orig('plants/wallnut.svg')),
+    card: asset(pvz('cards/wallnut.png'), orig('plants/wallnut.svg')),
+    w: classic ? 68 : 82, h: classic ? 76 : 94, anchorY: classic ? 18 : 24,
+    imgs: classic
+      ? [pvz('plants/wallnut.gif'), pvz('plants/wallnut_cracked1.gif'), pvz('plants/wallnut_cracked2.gif')]
+      : [orig('plants/wallnut.svg'), orig('plants/wallnut_cracked1.svg'), orig('plants/wallnut_cracked2.svg')],
   },
   snowpea: {
     name: '寒冰射手', cost: 175, hp: 300, cooldown: 8000,
-    img: './assets/original/plants/snowpea.svg',
-    card: './assets/original/plants/snowpea.svg',
-    w: 94, h: 94, anchorY: 26,
+    img: asset(pvz('plants/snowpea.gif'), orig('plants/snowpea.svg')),
+    card: asset(pvz('cards/snowpea.png'), orig('plants/snowpea.svg')),
+    w: classic ? 74 : 94, h: classic ? 74 : 94, anchorY: classic ? 20 : 26,
     fire: 1600, damage: 20, projectile: 'ice', slow: 3000,
   },
   cherrybomb: {
     name: '樱桃炸弹', cost: 150, hp: 9999, cooldown: 18000,
-    img: './assets/original/plants/cherrybomb.svg',
-    card: './assets/original/plants/cherrybomb.svg',
-    w: 86, h: 86, anchorY: 22,
+    img: asset(pvz('plants/cherrybomb.gif'), orig('plants/cherrybomb.svg')),
+    card: asset(pvz('cards/cherrybomb.png'), orig('plants/cherrybomb.svg')),
+    w: classic ? 96 : 86, h: classic ? 70 : 86, anchorY: classic ? 16 : 22,
     fuse: 900, damage: 900, radius: 200,
   },
 };
@@ -66,19 +69,36 @@ export const PLANTS = {
 export const ZOMBIES = {
   normal: {
     name: '普通僵尸', hp: 100, speed: 17, dps: 32,
-    img: './assets/original/zombies/zombie.svg',
-    w: 124, h: 118,
+    img: asset(pvz('zombies/zombie_walk.gif'), orig('zombies/zombie.svg')),
+    walk: asset(pvz('zombies/zombie_walk.gif'), orig('zombies/zombie.svg')),
+    attack: asset(pvz('zombies/zombie_attack.gif'), orig('zombies/zombie.svg')),
+    die: classic ? pvz('zombies/zombie_die.gif') : null,
+    w: classic ? 146 : 124, h: classic ? 127 : 118,
   },
   cone: {
     name: '路障僵尸', hp: 220, speed: 16, dps: 32,
-    img: './assets/original/zombies/cone.svg',
-    w: 124, h: 122,
+    img: asset(pvz('zombies/cone_walk.gif'), orig('zombies/cone.svg')),
+    walk: asset(pvz('zombies/cone_walk.gif'), orig('zombies/cone.svg')),
+    attack: asset(pvz('zombies/cone_attack.gif'), orig('zombies/cone.svg')),
+    die: classic ? pvz('zombies/zombie_die.gif') : null,
+    w: classic ? 146 : 124, h: classic ? 127 : 122,
   },
   bucket: {
     name: '铁桶僵尸', hp: 380, speed: 14, dps: 34,
-    img: './assets/original/zombies/bucket.svg',
-    w: 126, h: 124,
+    img: asset(pvz('zombies/bucket_walk.gif'), orig('zombies/bucket.svg')),
+    walk: asset(pvz('zombies/bucket_walk.gif'), orig('zombies/bucket.svg')),
+    attack: asset(pvz('zombies/bucket_attack.gif'), orig('zombies/bucket.svg')),
+    die: classic ? pvz('zombies/zombie_die.gif') : null,
+    w: classic ? 146 : 126, h: classic ? 127 : 124,
   },
+};
+
+export const ART = {
+  sun: asset(pvz('sun.gif'), orig('sun.svg')),
+  mower: asset(pvz('lawnmower.png'), orig('mower.svg')),
+  lawn: asset(pvz('lawn.jpg'), orig('lawn.svg')),
+  menu: asset(pvz('lawn.jpg'), orig('lawn.svg')),
+  boom: classic ? pvz('plants/boom.gif') : null,
 };
 
 export const WAVES = {

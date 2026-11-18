@@ -32,6 +32,7 @@
             <button id="btn-review" class="tool-btn">🔁 复习错词 <span id="review-count" class="due-badge">0</span></button>
             <button id="btn-import" class="tool-btn">📥 导入词表 <small>CSV / 教材单元</small></button>
           </div>
+          <div id="book-tabs" class="book-tabs"></div>
           <div id="unit-list" class="unit-list"></div>
         </div>
         <footer class="menu-foot">
@@ -45,7 +46,7 @@
     <section id="game" class="screen hidden">
       <div id="topbar">
         <div class="sun-meter" id="sun-meter" title="阳光">
-          <img src="./assets/original/sun.svg" alt="" />
+          <img src="./assets/original/sun.svg" alt="" id="sun-icon" />
           <span id="sun-count">50</span>
         </div>
         <div id="seedbar" class="seedbar"></div>
@@ -61,7 +62,7 @@
       </div>
 
       <div id="lawn">
-        <img class="lawn-bg" src="./assets/original/lawn.svg" alt="" draggable="false" />
+        <img class="lawn-bg" src="./assets/original/lawn.svg" alt="" draggable="false" id="lawn-bg" />
         <div id="grid-layer" class="layer"></div>
         <div id="mower-layer" class="layer"></div>
         <div id="plant-layer" class="layer"></div>

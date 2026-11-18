@@ -7,6 +7,7 @@ import { audio } from './audio.js';
 const $ = (id) => document.getElementById(id);
 const MINUTE = 60 * 1000;
 const EXTRA = 'abcdefghijklmnopqrstuvwxyz'.split('');
+const isLetter = (ch) => !!ch && /[a-z0-9]/i.test(ch);
 
 function shuffle(list) {
   const arr = list.slice();
@@ -91,7 +92,7 @@ export class ReviewSession {
     });
     $('rv-check').addEventListener('click', () => this.check());
     $('rv-input').addEventListener('input', (e) => {
-      const value = (e.target.value || '').toLowerCase().replace(/[^a-z]/g, '');
+      const value = (e.target.value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
       e.target.value = '';
       if (!value || this.locked) return;
       for (const ch of value) this.typeLetter(ch);
@@ -147,10 +148,12 @@ export class ReviewSession {
   buildTiles() {
     const w = this.words[this.index];
     if (!w) return;
-    const letters = w.en.split('');
+    const letters = (w.en.toLowerCase()).match(/[a-z0-9]/g) || [];
     const pool = EXTRA.filter(c => !letters.includes(c));
     const extras = [pool[Math.floor(Math.random() * pool.length)], pool[Math.floor(Math.random() * pool.length)]];
     this.tiles = shuffle([...letters, ...extras]).map(ch => ({ ch, used: false }));
+    const box = $('rv-tiles');
+    if (box) box.classList.toggle('dense', letters.length > 14);
   }
 
   render() {
@@ -160,7 +163,12 @@ export class ReviewSession {
     for (let i = 0; i < w.en.length; i++) {
       const slot = document.createElement('span');
       slot.className = 'slot';
-      if (i < this.typed.length) {
+      if (w.en[i] === ' ') {
+        slot.classList.add('space');
+      } else if (!isLetter(w.en[i])) {
+        slot.classList.add('punct');
+        slot.textContent = w.en[i];
+      } else if (i < this.typed.length) {
         slot.textContent = this.typed[i];
         slot.classList.add('filled');
       } else if (i === this.typed.length && !this.locked) {
@@ -183,11 +191,20 @@ export class ReviewSession {
     });
   }
 
+  advanceSeparators() {
+    const w = this.words[this.index];
+    if (!w) return;
+    while (this.typed.length < w.en.length && !isLetter(w.en[this.typed.length])) {
+      this.typed += w.en[this.typed.length];
+    }
+  }
+
   typeLetter(ch) {
     if (this.locked) return;
     const w = this.words[this.index];
-    if (!w || this.typed.length >= w.en.length) return;
+    if (!w || !isLetter(ch) || this.typed.length >= w.en.length) return;
     this.typed += ch;
+    this.advanceSeparators();
     this.render();
     if (this.typed.length === w.en.length) this.check();
   }
@@ -203,8 +220,11 @@ export class ReviewSession {
 
   backspace() {
     if (this.locked || !this.typed) return;
-    const removed = this.typed.charAt(this.typed.length - 1);
-    this.typed = this.typed.slice(0, -1);
+    let end = this.typed.length;
+    while (end > 0 && !isLetter(this.typed[end - 1])) end -= 1;
+    if (end === 0) return;
+    const removed = this.typed[end - 1];
+    this.typed = this.typed.slice(0, end - 1);
     for (let i = this.tiles.length - 1; i >= 0; i--) {
       if (this.tiles[i].used && this.tiles[i].ch === removed) {
         this.tiles[i].used = false;
@@ -224,8 +244,9 @@ export class ReviewSession {
     const w = this.words[this.index];
     if (!w) return;
     this.hintUsed = true;
-    this.typed = w.en[0];
-    const tile = this.tiles.find(t => !t.used && t.ch === w.en[0]);
+    this.typed = w.en[0].toLowerCase();
+    this.advanceSeparators();
+    const tile = this.tiles.find(t => !t.used && t.ch === w.en[0].toLowerCase());
     if (tile) tile.used = true;
     this.render();
     this.renderTiles();
@@ -241,7 +262,7 @@ export class ReviewSession {
       $('rv-tip').textContent = '先拼出单词再检查';
       return;
     }
-    if (this.typed === w.en) this.succeed(w);
+    if (this.typed.toLowerCase() === w.en.toLowerCase()) this.succeed(w);
     else this.fail(w);
   }
 

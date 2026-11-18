@@ -3,3 +3,5 @@ node_modules/
 Thumbs.db
 *.log
 .local/
+# 原版素材仅本地自用，不提交、不部署
+assets/pvz/

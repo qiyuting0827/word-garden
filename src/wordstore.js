@@ -103,11 +103,11 @@ export function parseWords(text) {
     }
     if (isHeader(cells)) return;
 
-    const en = String(cells[0] || '').trim().toLowerCase();
+    const en = String(cells[0] || '').trim().toLowerCase().replace(/\s+/g, ' ');
     const zh = String(cells[1] || '').trim();
-    if (!/^[a-z]{2,20}$/.test(en)) {
+    if (!/^[a-z0-9][a-z0-9 '\-.]{0,29}$/.test(en)) {
       skipped++;
-      if (errors.length < 6) errors.push(`第 ${index + 1} 行：英文需为 2–20 个字母`);
+      if (errors.length < 6) errors.push(`第 ${index + 1} 行：英文需为 2–30 个字母，可含空格、' - .`);
       return;
     }
     if (!zh) {

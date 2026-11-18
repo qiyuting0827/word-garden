@@ -1,14 +1,25 @@
 import { UNITS, DIFFICULTIES } from './words.js';
-import { SAVE_KEY } from './config.js';
+import { TEXTBOOK_BOOKS, TEXTBOOK_UNITS } from './textbook.js';
+import { SAVE_KEY, ART } from './config.js';
 import { Game } from './game.js';
 import { audio } from './audio.js';
+import { applySkin } from './skin.js';
 import { showDialog, closeDialog, starString, escapeHtml, toast } from './ui.js';
 import { allUnits, importUnit, deleteUnit, SAMPLE_CSV } from './wordstore.js';
 import { dueCount, dueWords } from './srs.js';
 import { ReviewSession } from './review.js';
 
 const $ = (id) => document.getElementById(id);
-let units = allUnits(UNITS);
+const BOOK_ORDER = ['主题', ...TEXTBOOK_BOOKS.map(b => b.name), '自定义'];
+let activeBook = localStorage.getItem('word-garden-book') || '六上';
+let units = [];
+
+function loadUnits() {
+  const base = allUnits(UNITS);
+  const theme = base.filter(u => !u.custom).map(u => ({ ...u, book: u.book || '主题' }));
+  const custom = base.filter(u => u.custom).map(u => ({ ...u, book: '自定义' }));
+  return [...theme, ...TEXTBOOK_UNITS, ...custom];
+}
 
 function loadProgress() {
   try {
@@ -47,8 +58,34 @@ function refreshReviewButton() {
   btn.classList.toggle('has-due', n > 0);
 }
 
+function buildBookTabs() {
+  const tabs = $('book-tabs');
+  if (!tabs) return;
+  if (!units.some(u => u.book === activeBook)) {
+    activeBook = '主题';
+    localStorage.setItem('word-garden-book', activeBook);
+  }
+  tabs.innerHTML = '';
+  BOOK_ORDER.forEach((name) => {
+    const count = units.filter(u => u.book === name).length;
+    if (!count) return;
+    const btn = document.createElement('button');
+    btn.className = 'book-tab' + (name === activeBook ? ' active' : '');
+    btn.innerHTML = `${escapeHtml(name)}<small>${count}</small>`;
+    btn.addEventListener('click', () => {
+      if (name === activeBook) return;
+      activeBook = name;
+      localStorage.setItem('word-garden-book', name);
+      audio.play('click', { volume: 0.35 });
+      buildMenu();
+    });
+    tabs.appendChild(btn);
+  });
+}
+
 function buildMenu() {
-  units = allUnits(UNITS);
+  units = loadUnits();
+  buildBookTabs();
   const list = $('unit-list');
   list.innerHTML = '';
   const mode = localStorage.getItem('word-garden-mode') || 'type';
@@ -57,7 +94,8 @@ function buildMenu() {
   });
   refreshReviewButton();
 
-  units.forEach((unit) => {
+  const shown = units.filter(u => u.book === activeBook);
+  shown.forEach((unit) => {
     const card = document.createElement('div');
     card.className = 'unit';
 
@@ -131,6 +169,10 @@ function confirmDelete(unitId) {
 function startGame(unitId, diff) {
   const unit = units.find(u => u.id === unitId);
   if (!unit) return;
+  if (unit.book && unit.book !== activeBook) {
+    activeBook = unit.book;
+    localStorage.setItem('word-garden-book', activeBook);
+  }
   $('menu').classList.add('hidden');
   $('overlay').classList.add('hidden');
   game.start({ unit, diff });
@@ -325,7 +367,7 @@ function openImport() {
         </div>
         <div class="import-hint">
           支持逗号 / 制表符 / 中文逗号 / 空格分隔；<code>en,zh</code> 两列即可，
-          可加 <code>emoji,ipa,example</code>。英文限 2–20 个字母，单次最多 300 词。
+          可加 <code>emoji,ipa,example</code>。英文可含空格、撇号、连字符，单次最多 300 词。
         </div>
         <div id="import-msg" class="import-msg"></div>
       </div>`,
@@ -379,6 +421,8 @@ function doImport() {
   try {
     const result = importUnit(name, text);
     closeDialog();
+    activeBook = '自定义';
+    localStorage.setItem('word-garden-book', activeBook);
     buildMenu();
     audio.play('win', { volume: 0.3 });
     const extra = result.skipped ? `，跳过 ${result.skipped} 行` : '';
@@ -436,6 +480,10 @@ window.addEventListener('pointerdown', () => audio.preload(), { once: true });
 window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && !$('overlay').classList.contains('hidden') && game.paused) game.resume();
 });
+
+applySkin();
+if ($('lawn-bg')) $('lawn-bg').src = ART.lawn;
+if ($('sun-icon')) $('sun-icon').src = ART.sun;
 
 fitStage();
 buildMenu();
