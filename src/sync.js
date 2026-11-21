@@ -252,13 +252,6 @@ export function scheduleSync() {
   timer = setTimeout(() => syncNow(), DEBOUNCE_MS);
 }
 
-async function enableWithNewCode() {
-  const code = randomCode();
-  writeState({ code, revision: null, lastAt: 0, status: 'syncing' });
-  const result = await syncCore();
-  return result;
-}
-
 async function restoreWithCode(code) {
   const clean = code.trim();
   if (!/^[a-z0-9]{16,128}$/i.test(clean)) throw new Error('同步码格式不对（应为 25 位字母数字）');
@@ -331,7 +324,7 @@ export function openSync() {
     : [
         { label: '关闭', cls: 'big-btn', onClick: () => closeDialog() },
         { label: '输入码恢复', cls: 'big-btn', onClick: () => restoreFromInput() },
-        { label: '开启同步', cls: 'big-btn gold', onClick: () => enableFromDialog() },
+        { label: '生成同步码', cls: 'big-btn gold', onClick: () => generateFromDialog() },
       ];
   showDialog({ html, actions, dismissible: true });
   document.getElementById('dialog')?.classList.add('students-dialog');
@@ -353,18 +346,15 @@ async function copyCode(code) {
   }
 }
 
-async function enableFromDialog() {
-  setMsg('正在开启…');
-  try {
-    const result = await enableWithNewCode();
-    if (result.error) throw new Error(result.error);
-    closeDialog();
-    toast('云同步已开启，请保存好同步码');
-    openSync();
-  } catch (err) {
-    stopSync();
-    setMsg(err.message || '开启失败', true);
-  }
+async function generateFromDialog() {
+  writeState({ code: randomCode(), revision: null, lastAt: 0, status: 'syncing' });
+  refreshButton();
+  setMsg('已生成同步码，正在上传到云端…');
+  const result = await syncCore();
+  closeDialog();
+  if (result.error) toast('同步码已生成，但云端暂时连不上，将自动重试', 3500);
+  else toast('同步码已生成，请妥善保存');
+  openSync();
 }
 
 async function restoreFromInput() {
