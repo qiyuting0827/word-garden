@@ -11,6 +11,11 @@ import { allUnits, importUnit, deleteUnit, SAMPLE_CSV } from './wordstore.js';
 import { dueCount, dueWords } from './srs.js';
 import { ReviewSession } from './review.js';
 import { loadRanges, addRange, deleteRange, findRange } from './ranges.js';
+import { openSync, initSync } from './sync.js';
+import {
+  loadStudents, activeStudent, setActiveStudent, importStudents, deleteStudent,
+  updateActiveProgress, addHistory, clearHistory,
+} from './students.js';
 
 const $ = (id) => document.getElementById(id);
 const isTouch = window.matchMedia('(pointer: coarse)').matches
@@ -29,6 +34,8 @@ function loadUnits() {
 }
 
 function loadProgress() {
+  const student = activeStudent();
+  if (student) return student.progress;
   try {
     return JSON.parse(localStorage.getItem(SAVE_KEY) || '{}');
   } catch {
@@ -37,6 +44,13 @@ function loadProgress() {
 }
 
 function saveProgress(progress) {
+  if (activeStudent()) {
+    updateActiveProgress((p) => {
+      Object.keys(p).forEach((k) => delete p[k]);
+      Object.assign(p, progress);
+    });
+    return;
+  }
   localStorage.setItem(SAVE_KEY, JSON.stringify(progress));
 }
 
@@ -175,6 +189,7 @@ function buildMenu() {
     btn.classList.toggle('active', btn.dataset.mode === mode);
   });
   refreshReviewButton();
+  refreshStudentButton();
   refreshSpeedButton();
 
   const shown = units.filter(u => u.book === activeBook);
@@ -340,6 +355,23 @@ function showNextActions(result) {
 
 function handleFinish(result) {
   const progress = loadProgress();
+  addHistory({
+    at: Date.now(),
+    unitId: result.unit.id,
+    unitName: result.unit.name,
+    book: result.unit.book || '',
+    diff: result.diff,
+    win: !!result.win,
+    stars: result.win ? result.stars : 0,
+    accuracy: Math.round((result.accuracy || 0) * 100),
+    correct: result.correct || 0,
+    wrong: result.wrong || 0,
+    maxCombo: result.maxCombo || 0,
+    killed: result.killed || 0,
+    total: result.total || 0,
+    seconds: Math.round(result.seconds || 0),
+    wrongWords: result.wrongWords.map(({ word }) => word.en),
+  });
   if (result.win) {
     const key = `${result.unit.id}-${result.diff}`;
     const prev = progress[key]?.stars || 0;
@@ -683,6 +715,128 @@ function openRange() {
   fill(startBook);
 }
 
+function refreshStudentButton() {
+  const btn = $('btn-students');
+  if (!btn) return;
+  const state = loadStudents();
+  const active = state.list.find((s) => s.id === state.active);
+  btn.innerHTML = `👥 ${escapeHtml(active ? active.name : '学员')}<small>${active ? '当前学员' : `${state.list.length} 人`}</small>`;
+  btn.classList.toggle('has-due', !!active);
+}
+
+function openStudents() {
+  const state = loadStudents();
+  const rows = state.list.length
+    ? state.list.map((s) => `
+        <div class="stu-row ${s.id === state.active ? 'active' : ''}">
+          <div class="stu-info"><b>${escapeHtml(s.name)}</b><span>${escapeHtml(s.no || '无学号')} · ${s.history.length} 条记录</span></div>
+          <div class="stu-actions">
+            <button class="mini-btn" data-stu-use="${s.id}" ${s.id === state.active ? 'disabled' : ''}>${s.id === state.active ? '当前' : '选为当前'}</button>
+            <button class="mini-btn" data-stu-hist="${s.id}">历史</button>
+            <button class="mini-btn" data-stu-del="${s.id}">删除</button>
+          </div>
+        </div>`).join('')
+    : '<p class="dialog-sub">还没有学员，请在下方导入名单。</p>';
+  showDialog({
+    html: `
+      <h2>👥 学员管理</h2>
+      <p class="dialog-sub">选中学员后，闯关进度与历史只记在该学员名下</p>
+      <div class="stu-list">${rows}</div>
+      <div class="import-box">
+        <label class="import-label">导入名单（每行：姓名,学号；学号可省略）</label>
+        <textarea id="stu-text" class="import-text" placeholder="张小明,01&#10;李华,02&#10;王芳"></textarea>
+        <div class="file-row"><input type="file" id="stu-file" accept=".csv,.txt" /></div>
+        <p id="stu-msg" class="import-msg"></p>
+      </div>`,
+    actions: [
+      { label: '导入名单', cls: 'gold', onClick: doImportStudents },
+      { label: '不选学员', cls: 'gray', onClick: () => { setActiveStudent(null); closeDialog(); buildMenu(); } },
+      { label: '关闭', cls: 'gray', onClick: () => { closeDialog(); buildMenu(); } },
+    ],
+  });
+  $('dialog').classList.add('students-dialog');
+  $('stu-file').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => { $('stu-text').value = String(reader.result || ''); };
+    reader.readAsText(file, 'UTF-8');
+  });
+  document.querySelectorAll('#dialog [data-stu-use]').forEach((b) => b.addEventListener('click', () => {
+    setActiveStudent(b.dataset.stuUse);
+    buildMenu();
+    openStudents();
+  }));
+  document.querySelectorAll('#dialog [data-stu-hist]').forEach((b) => b.addEventListener('click', () => openHistory(b.dataset.stuHist)));
+  document.querySelectorAll('#dialog [data-stu-del]').forEach((b) => b.addEventListener('click', () => {
+    const s = loadStudents().list.find((x) => x.id === b.dataset.stuDel);
+    if (!s || !confirm(`删除学员「${s.name}」？其闯关进度和历史将一并删除。`)) return;
+    deleteStudent(s.id);
+    buildMenu();
+    openStudents();
+  }));
+}
+
+function doImportStudents() {
+  const msg = $('stu-msg');
+  const res = importStudents($('stu-text').value);
+  if (!res.added && !res.skipped) {
+    msg.textContent = '没有解析到学员，请检查格式（每行：姓名,学号）';
+    msg.classList.add('bad');
+    audio.play('chomp');
+    return;
+  }
+  toast(`已导入 ${res.added} 人${res.skipped ? `，跳过 ${res.skipped} 个重复` : ''}`);
+  buildMenu();
+  openStudents();
+}
+
+function openHistory(id) {
+  const s = loadStudents().list.find((x) => x.id === id);
+  if (!s) return;
+  const items = s.history.slice().reverse().slice(0, 60);
+  const rows = items.length
+    ? items.map((h) => {
+        const d = new Date(h.at);
+        const pad = (n) => String(n).padStart(2, '0');
+        const when = `${d.getMonth() + 1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        const wrong = h.wrongWords?.length
+          ? `<span class="h-wrong" title="${escapeHtml(h.wrongWords.join(', '))}">错 ${h.wrongWords.length}</span>`
+          : '<span class="h-ok">无</span>';
+        return `<tr>
+            <td>${when}</td><td>${escapeHtml(h.unitName)}</td><td>${['', '简单', '普通', '困难'][h.diff] || ''}</td>
+            <td>${h.win ? '<b class="h-win">过关</b>' : '<span class="h-lose">失败</span>'}</td>
+            <td>${starString(h.stars)}</td><td>${h.accuracy}%</td>
+            <td>${h.correct}/${h.correct + h.wrong}</td><td>${h.seconds}s</td><td>${wrong}</td>
+          </tr>`;
+      }).join('')
+    : '<tr><td colspan="9">暂无记录，闯关结束后会自动记录</td></tr>';
+  showDialog({
+    html: `
+      <h2>📈 ${escapeHtml(s.name)} 的历史</h2>
+      <p class="dialog-sub">${s.no ? `学号 ${escapeHtml(s.no)} · ` : ''}共 ${s.history.length} 次闯关（显示最近 60 次）</p>
+      <div class="hist-wrap">
+        <table class="hist-table">
+          <thead><tr><th>时间</th><th>关卡</th><th>难度</th><th>结果</th><th>星</th><th>正确率</th><th>拼对</th><th>用时</th><th>错词</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`,
+    actions: [
+      {
+        label: '清空历史',
+        cls: 'red',
+        onClick: () => {
+          if (!confirm(`清空「${s.name}」的全部历史记录？`)) return;
+          clearHistory(id);
+          openHistory(id);
+        },
+      },
+      { label: '返回', cls: 'gray', onClick: openStudents },
+    ],
+  });
+  $('dialog').classList.add('students-dialog');
+}
+
 function openImport() {
   showDialog({
     html: `
@@ -792,6 +946,8 @@ document.querySelectorAll('#menu-mode button').forEach((btn) => {
   });
 });
 
+$('btn-students').addEventListener('click', () => openStudents());
+
 $('btn-import').addEventListener('click', () => {
   audio.play('click', { volume: 0.4 });
   openImport();
@@ -898,3 +1054,5 @@ if ($('sun-icon')) $('sun-icon').src = ART.sun;
 
 fitStage();
 buildMenu();
+$('btn-sync').addEventListener('click', () => openSync());
+initSync();

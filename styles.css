@@ -1777,3 +1777,45 @@ body.review-open .tk-actions [data-tk="hide"] { display: none; }
   #dialog.range-dialog .range-info b { font-size: 26px; }
   #dialog.range-dialog .big-btn { font-size: 24px; padding: 12px 30px; }
 }
+
+/* ================= 学员 / 历史记录 ================= */
+.stu-list { max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin: 10px 0 14px; }
+.stu-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 12px; background: #fffdf5; border: 2px solid #d9bd85; }
+.stu-row.active { border-color: #4c9124; background: #eef9df; }
+.stu-info { flex: 1; min-width: 0; font-size: 15px; font-weight: 700; color: #4a2c14; }
+.stu-info small { font-size: 12px; color: #9a7a48; margin-left: 6px; font-weight: 600; }
+.stu-actions { display: flex; gap: 6px; }
+.stu-actions button { padding: 5px 10px; font-size: 13px; border-radius: 8px; }
+.stu-empty { font-size: 14px; color: #8a6a38; text-align: center; padding: 14px 0; }
+.stu-import { margin-top: 8px; }
+.stu-import textarea { width: 100%; min-height: 110px; font-size: 14px; border-radius: 10px; padding: 8px 10px; border: 2px solid #caa25f; background: #fffdf5; resize: vertical; box-sizing: border-box; }
+.hist-wrap { max-height: 420px; overflow: auto; border-radius: 12px; border: 2px solid #d9bd85; background: #fffdf5; }
+.hist-table { width: 100%; border-collapse: collapse; font-size: 13px; color: #4a2c14; }
+.hist-table th, .hist-table td { padding: 6px 8px; border-bottom: 1px solid #ecdcb5; text-align: left; white-space: nowrap; }
+.hist-table th { position: sticky; top: 0; background: #f3e3b8; font-weight: 800; }
+.hist-table td.wrongs { white-space: normal; max-width: 260px; font-size: 12px; color: #8a4a2c; }
+.h-win { color: #3a8a1a; font-weight: 800; }
+.h-lose { color: #c0392b; font-weight: 800; }
+.h-ok { color: #3a8a1a; }
+.h-wrong { color: #c0392b; }
+#btn-students.has-due { background: linear-gradient(180deg, #e6f7d2, #b9e38e); border-color: #4c9124; }
+@media (pointer: coarse), (max-width: 1100px) {
+  #dialog.students-dialog { width: 1080px; max-height: 700px; }
+  #dialog.students-dialog h2 { font-size: 40px; }
+  #dialog.students-dialog .stu-row { padding: 10px 14px; }
+  #dialog.students-dialog .stu-info { font-size: 22px; }
+  #dialog.students-dialog .stu-actions button { font-size: 20px; padding: 8px 14px; }
+  #dialog.students-dialog textarea { font-size: 22px; min-height: 150px; }
+  #dialog.students-dialog .hist-table { font-size: 20px; }
+  #dialog.students-dialog .hist-table th, #dialog.students-dialog .hist-table td { padding: 8px 10px; }
+  #dialog.students-dialog .big-btn { font-size: 24px; padding: 12px 30px; }
+}
+
+/* 云同步 */
+.sync-code { margin: 10px 0; text-align: center; }
+.sync-code code {
+  display: inline-block; padding: 10px 14px; border-radius: 10px;
+  background: #fff7dc; border: 2px dashed #c9a24a; color: #5a3d12;
+  font-size: 18px; letter-spacing: 1px; word-break: break-all; user-select: all;
+}
+#btn-sync.on { box-shadow: 0 0 0 2px rgba(120, 220, 130, 0.9); }

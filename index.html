@@ -6,6 +6,10 @@
 <title>单词花园 · Word Garden</title>
 <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml" />
 <link rel="stylesheet" href="./styles.css" />
+<link rel="manifest" href="./manifest.webmanifest" />
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+<meta name="theme-color" content="#2f7a3a" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
 </head>
 <body>
 <div id="viewport">
@@ -33,6 +37,8 @@
             <button id="btn-range" class="tool-btn">🎯 自选范围 <small>单词起止 / 跨单元</small></button>
             <button id="btn-speed" class="tool-btn"><span id="speed-icon">🚶</span> 出怪速度 <b id="speed-label">正常</b></button>
             <button id="btn-review" class="tool-btn">🔁 复习错词 <span id="review-count" class="due-badge">0</span></button>
+            <button id="btn-students" class="tool-btn"></button>
+            <button id="btn-sync" class="tool-btn"></button>
             <button id="btn-import" class="tool-btn">📥 导入词表 <small>CSV / 教材单元</small></button>
           </div>
           <div id="book-tabs" class="book-tabs"></div>
@@ -151,5 +157,12 @@
 </div>
 
 <script type="module" src="./src/main.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).catch(function () {});
+    });
+  }
+</script>
 </body>
 </html>
